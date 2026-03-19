@@ -1,5 +1,5 @@
 import { auth } from "../../../auth";
-import { checkPremiumRole } from "../../../lib/discord-role";
+import { checkGuildMembership, checkPremiumRole } from "../../../lib/discord-role";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -18,6 +18,10 @@ export async function GET() {
   }
 
   const userId = session.user.id || "";
+  const membership = userId
+    ? await checkGuildMembership(userId)
+    : { allowed: false, reason: "Missing Discord user ID in session. Please reconnect." };
+
   const premium = userId
     ? await checkPremiumRole(userId)
     : { allowed: false, reason: "Missing Discord user ID in session. Please reconnect." };
@@ -29,6 +33,8 @@ export async function GET() {
       image: session.user.image || "",
       tag: session.user.tag || ""
     },
+    inGuild: membership.allowed,
+    guildReason: membership.reason,
     premium: premium.allowed,
     premiumReason: premium.reason
   });

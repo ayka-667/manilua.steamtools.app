@@ -1,6 +1,6 @@
 import { applyRateLimit } from "../../../../lib/rate-limit";
 import { auth } from "../../../../auth";
-import { checkPremiumRole } from "../../../../lib/discord-role";
+import { checkGuildMembership, checkPremiumRole } from "../../../../lib/discord-role";
 import { logField, sendDiscordLog } from "../../../../lib/discord-logs";
 import { getHeaderImageUrl, getSteamGameMeta } from "../../../../lib/steam-meta";
 
@@ -54,6 +54,19 @@ export async function POST(request, context) {
       fields: [logField("Action", action, false)]
     });
     return json({ error: "Unknown action." }, 404);
+  }
+
+  const membership = await checkGuildMembership(session.user.id);
+  if (!membership.allowed) {
+    await sendDiscordLog({
+      title: "Action blocked: not in Discord server",
+      level: "warning",
+      description: "User attempted an action while not being a server member.",
+      session,
+      mentionUser: true,
+      fields: [logField("Action", action), logField("Reason", membership.reason || "Join required", false)]
+    });
+    return json({ error: membership.reason || "Join the Discord server first." }, 403);
   }
 
   if (action === "requestUpdate" || action === "updateGame") {
