@@ -5,6 +5,7 @@ import { logField, sendDiscordLog } from "../../../../lib/discord-logs";
 import { getHeaderImageUrl, getSteamGameMeta } from "../../../../lib/steam-meta";
 
 const API_BASE = "https://generator.ryuu.lol";
+const DAY_MS = 86_400_000;
 
 const ACTION_MAP = {
   downloadManifest: { endpoint: "secure_download", isDownload: true },
@@ -69,9 +70,11 @@ export async function POST(request, context) {
     return json({ error: membership.reason || "Join the Discord server first." }, 403);
   }
 
+  const premium = await checkPremiumRole(session.user.id);
+  const isPremiumUser = premium.allowed;
+
   if (action === "requestUpdate" || action === "updateGame") {
-    const premium = await checkPremiumRole(session.user.id);
-    if (!premium.allowed) {
+    if (!isPremiumUser) {
       await sendDiscordLog({
         title: "Premium action denied",
         level: "warning",
@@ -111,6 +114,54 @@ export async function POST(request, context) {
       429,
       { "retry-after": String(rate.retryAfterSec) }
     );
+  }
+
+  if (action === "downloadManifest" || action === "downloadLua") {
+    const dailyLimit = isPremiumUser ? 500 : 50;
+    const cooldownMs = isPremiumUser ? 2_000 : 5_000;
+    const tier = isPremiumUser ? "premium" : "standard";
+    const resourceName = action === "downloadLua" ? "Lua" : "manifest";
+
+    const dailyQuota = applyRateLimit({
+      key: `${action}:day:${session.user.id}`,
+      limit: dailyLimit,
+      windowMs: DAY_MS
+    });
+
+    if (!dailyQuota.allowed) {
+      await sendDiscordLog({
+        title: `${resourceName} daily quota reached`,
+        level: "warning",
+        description: `User reached the daily ${resourceName.toLowerCase()} limit.`,
+        session,
+        mentionUser: true,
+        fields: [
+          logField("Action", action),
+          logField("Tier", tier),
+          logField("Limit", `${dailyLimit}/day`),
+          logField("Retry", `${dailyQuota.retryAfterSec}s`)
+        ]
+      });
+      return json(
+        { error: `Daily ${resourceName.toLowerCase()} limit reached (${dailyLimit}/day).` },
+        429,
+        { "retry-after": String(dailyQuota.retryAfterSec) }
+      );
+    }
+
+    const cooldown = applyRateLimit({
+      key: `${action}:cooldown:${session.user.id}`,
+      limit: 1,
+      windowMs: cooldownMs
+    });
+
+    if (!cooldown.allowed) {
+      return json(
+        { error: `Cooldown active. Retry in ${cooldown.retryAfterSec}s.` },
+        429,
+        { "retry-after": String(cooldown.retryAfterSec) }
+      );
+    }
   }
 
   const apiKey = process.env.RYUU_API_KEY;
