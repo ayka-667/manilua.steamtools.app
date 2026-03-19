@@ -118,12 +118,12 @@ export async function POST(request, context) {
 
   if (action === "downloadManifest" || action === "downloadLua") {
     const dailyLimit = isPremiumUser ? 500 : 50;
-    const cooldownMs = isPremiumUser ? 2_000 : 5_000;
+    const cooldownMs = isPremiumUser ? 10_000 : 5_000;
     const tier = isPremiumUser ? "premium" : "standard";
     const resourceName = action === "downloadLua" ? "Lua" : "manifest";
 
     const dailyQuota = applyRateLimit({
-      key: `${action}:day:${session.user.id}`,
+      key: `downloads:day:${session.user.id}`,
       limit: dailyLimit,
       windowMs: DAY_MS
     });
@@ -150,7 +150,7 @@ export async function POST(request, context) {
     }
 
     const cooldown = applyRateLimit({
-      key: `${action}:cooldown:${session.user.id}`,
+      key: `downloads:cooldown:${session.user.id}`,
       limit: 1,
       windowMs: cooldownMs
     });

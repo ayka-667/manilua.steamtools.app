@@ -1,5 +1,8 @@
 import { auth } from "../../../auth";
 import { checkGuildMembership, checkPremiumRole } from "../../../lib/discord-role";
+import { getRateLimitState } from "../../../lib/rate-limit";
+
+const DAY_MS = 86_400_000;
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -25,6 +28,25 @@ export async function GET() {
   const premium = userId
     ? await checkPremiumRole(userId)
     : { allowed: false, reason: "Missing Discord user ID in session. Please reconnect." };
+  const isPremiumUser = premium.allowed;
+  const dailyLimit = isPremiumUser ? 500 : 50;
+  const cooldownMs = isPremiumUser ? 10_000 : 5_000;
+
+  const downloadQuota = userId
+    ? getRateLimitState({
+        key: `downloads:day:${userId}`,
+        limit: dailyLimit,
+        windowMs: DAY_MS
+      })
+    : { remaining: 0 };
+
+  const downloadCooldown = userId
+    ? getRateLimitState({
+        key: `downloads:cooldown:${userId}`,
+        limit: 1,
+        windowMs: cooldownMs
+      })
+    : { retryAfterSec: 0 };
 
   return json({
     user: {
@@ -36,6 +58,12 @@ export async function GET() {
     inGuild: membership.allowed,
     guildReason: membership.reason,
     premium: premium.allowed,
-    premiumReason: premium.reason
+    premiumReason: premium.reason,
+    usage: {
+      tier: isPremiumUser ? "premium" : "standard",
+      dailyLimit,
+      downloadsRemaining: downloadQuota.remaining,
+      cooldownSec: downloadCooldown.retryAfterSec
+    }
   });
 }

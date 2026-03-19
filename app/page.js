@@ -44,6 +44,7 @@ export default function HomePage() {
   const [gameLoading, setGameLoading] = useState(false);
   const [viewer, setViewer] = useState(null);
   const [isPremium, setIsPremium] = useState(false);
+  const [usage, setUsage] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [resolvedAppid, setResolvedAppid] = useState("");
   const menuRef = useRef(null);
@@ -55,6 +56,22 @@ export default function HomePage() {
     document.documentElement.dataset.theme = "dark";
   }, []);
 
+  async function loadViewer({ redirectOnFail = false } = {}) {
+    try {
+      const response = await fetch("/api/me", { cache: "no-store" });
+      if (!response.ok) {
+        if (redirectOnFail) window.location.href = "/login";
+        return;
+      }
+      const data = await response.json();
+      setViewer(data.user);
+      setIsPremium(Boolean(data.premium));
+      setUsage(data.usage || null);
+    } catch {
+      if (redirectOnFail) window.location.href = "/login";
+    }
+  }
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem(HISTORY_KEY);
@@ -65,27 +82,24 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const response = await fetch("/api/me");
-        if (!response.ok) {
-          window.location.href = "/login";
-          return;
-        }
-        const data = await response.json();
-        if (!active) return;
-        setViewer(data.user);
-        setIsPremium(Boolean(data.premium));
-      } catch {
-        window.location.href = "/login";
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
+    loadViewer({ redirectOnFail: true });
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    loadViewer();
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen || !usage?.cooldownSec) return;
+    const intervalId = setInterval(() => {
+      setUsage((prev) => {
+        if (!prev || prev.cooldownSec <= 0) return prev;
+        return { ...prev, cooldownSec: prev.cooldownSec - 1 };
+      });
+    }, 1000);
+    return () => clearInterval(intervalId);
+  }, [menuOpen, usage?.cooldownSec]);
 
   useEffect(() => {
     function onGlobalClick(event) {
@@ -199,6 +213,9 @@ export default function HomePage() {
     } catch (error) {
       pushToast("error", error.message || "Unexpected error.");
     } finally {
+      if (actionId === "downloadManifest" || actionId === "downloadLua") {
+        await loadViewer();
+      }
       setBusyAction("");
     }
   }
@@ -223,6 +240,18 @@ export default function HomePage() {
         {menuOpen ? (
           <div className="st-profile-menu">
             <p>{viewer?.tag || viewer?.name || "Connected"}</p>
+            <div className="st-profile-stats">
+              <p>
+                Tier: <strong>{usage?.tier === "premium" ? "Premium" : "Standard"}</strong>
+              </p>
+              <p>
+                Downloads left: <strong>{usage?.downloadsRemaining ?? "-"}</strong>
+                {usage?.dailyLimit ? ` / ${usage.dailyLimit}` : ""}
+              </p>
+              <p>
+                Cooldown: <strong>{usage?.cooldownSec ? `${usage.cooldownSec}s` : "Ready"}</strong>
+              </p>
+            </div>
             <button type="button" onClick={() => signOut({ callbackUrl: "/login" })}>
               Sign out
             </button>
