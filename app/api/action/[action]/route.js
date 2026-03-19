@@ -1,4 +1,4 @@
-import { applyRateLimit } from "../../../../lib/rate-limit";
+import { applyRateLimit, getRateLimitState } from "../../../../lib/rate-limit";
 import { auth } from "../../../../auth";
 import { checkGuildMembership, checkPremiumRole } from "../../../../lib/discord-role";
 import { logField, sendDiscordLog } from "../../../../lib/discord-logs";
@@ -121,14 +121,25 @@ export async function POST(request, context) {
     const cooldownMs = isPremiumUser ? 10_000 : 5_000;
     const tier = isPremiumUser ? "premium" : "standard";
     const resourceName = action === "downloadLua" ? "Lua" : "manifest";
+    const cooldownState = getRateLimitState({
+      key: `downloads:cooldown:${session.user.id}`,
+      limit: 1,
+      windowMs: cooldownMs
+    });
+    if (cooldownState.retryAfterSec > 0) {
+      return json(
+        { error: `Cooldown active. Retry in ${cooldownState.retryAfterSec}s.` },
+        429,
+        { "retry-after": String(cooldownState.retryAfterSec) }
+      );
+    }
 
-    const dailyQuota = applyRateLimit({
+    const dailyState = getRateLimitState({
       key: `downloads:day:${session.user.id}`,
       limit: dailyLimit,
       windowMs: DAY_MS
     });
-
-    if (!dailyQuota.allowed) {
+    if (dailyState.remaining <= 0) {
       await sendDiscordLog({
         title: `${resourceName} daily quota reached`,
         level: "warning",
@@ -139,27 +150,13 @@ export async function POST(request, context) {
           logField("Action", action),
           logField("Tier", tier),
           logField("Limit", `${dailyLimit}/day`),
-          logField("Retry", `${dailyQuota.retryAfterSec}s`)
+          logField("Retry", `${dailyState.retryAfterSec}s`)
         ]
       });
       return json(
         { error: `Daily ${resourceName.toLowerCase()} limit reached (${dailyLimit}/day).` },
         429,
-        { "retry-after": String(dailyQuota.retryAfterSec) }
-      );
-    }
-
-    const cooldown = applyRateLimit({
-      key: `downloads:cooldown:${session.user.id}`,
-      limit: 1,
-      windowMs: cooldownMs
-    });
-
-    if (!cooldown.allowed) {
-      return json(
-        { error: `Cooldown active. Retry in ${cooldown.retryAfterSec}s.` },
-        429,
-        { "retry-after": String(cooldown.retryAfterSec) }
+        { "retry-after": String(dailyState.retryAfterSec) }
       );
     }
   }
@@ -257,6 +254,31 @@ export async function POST(request, context) {
   }
 
   if (config.isDownload) {
+    if (action === "downloadManifest" || action === "downloadLua") {
+      const dailyLimit = isPremiumUser ? 500 : 50;
+      const cooldownMs = isPremiumUser ? 10_000 : 5_000;
+      const resourceName = action === "downloadLua" ? "Lua" : "manifest";
+
+      const dailyConsume = applyRateLimit({
+        key: `downloads:day:${session.user.id}`,
+        limit: dailyLimit,
+        windowMs: DAY_MS
+      });
+      if (!dailyConsume.allowed) {
+        return json(
+          { error: `Daily ${resourceName.toLowerCase()} limit reached (${dailyLimit}/day).` },
+          429,
+          { "retry-after": String(dailyConsume.retryAfterSec) }
+        );
+      }
+
+      applyRateLimit({
+        key: `downloads:cooldown:${session.user.id}`,
+        limit: 1,
+        windowMs: cooldownMs
+      });
+    }
+
     const filename = `${action}-${rawAppid}`;
     await sendDiscordLog({
       title: "Action success",
