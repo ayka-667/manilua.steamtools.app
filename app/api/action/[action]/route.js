@@ -118,7 +118,7 @@ export async function POST(request, context) {
 
   if (action === "downloadManifest" || action === "downloadLua") {
     const dailyLimit = isPremiumUser ? 500 : 50;
-    const cooldownMs = isPremiumUser ? 10_000 : 5_000;
+    const cooldownMs = isPremiumUser ? 2_000 : 10_000;
     const tier = isPremiumUser ? "premium" : "standard";
     const resourceName = action === "downloadLua" ? "Lua" : "manifest";
     const cooldownState = getRateLimitState({
@@ -256,7 +256,7 @@ export async function POST(request, context) {
   if (config.isDownload) {
     if (action === "downloadManifest" || action === "downloadLua") {
       const dailyLimit = isPremiumUser ? 500 : 50;
-      const cooldownMs = isPremiumUser ? 10_000 : 5_000;
+      const cooldownMs = isPremiumUser ? 2_000 : 10_000;
       const resourceName = action === "downloadLua" ? "Lua" : "manifest";
 
       const dailyConsume = applyRateLimit({

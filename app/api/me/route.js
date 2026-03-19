@@ -30,7 +30,7 @@ export async function GET() {
     : { allowed: false, reason: "Missing Discord user ID in session. Please reconnect." };
   const isPremiumUser = premium.allowed;
   const dailyLimit = isPremiumUser ? 500 : 50;
-  const cooldownMs = isPremiumUser ? 10_000 : 5_000;
+  const cooldownMs = isPremiumUser ? 2_000 : 10_000;
 
   const downloadQuota = userId
     ? getRateLimitState({
