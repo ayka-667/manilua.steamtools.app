@@ -31,6 +31,13 @@ function json(data, status = 200, extraHeaders = {}) {
   });
 }
 
+function getUpstreamUserMessage(status) {
+  if (status === 404) {
+    return "Game not found or not released yet.";
+  }
+  return `Upstream error ${status}.`;
+}
+
 export async function POST(request, context) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -246,7 +253,7 @@ export async function POST(request, context) {
     });
     return json(
       {
-        error: `Upstream error ${upstream.status}.`,
+        error: getUpstreamUserMessage(upstream.status),
         detail: failText.slice(0, 300)
       },
       502
