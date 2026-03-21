@@ -192,6 +192,10 @@ body {
   border-color: color-mix(in srgb, var(--st-brand) 50%, var(--st-border));
 }
 
+.st-profile-menu button + button {
+  margin-top: 0.4rem;
+}
+
 .st-hero h1 {
   margin: 0.2rem 0 0.28rem;
   font-size: clamp(1.45rem, 2.2vw, 2.25rem);

@@ -67,7 +67,7 @@ export default function HomePage() {
       const data = await response.json();
       setViewer(data.user);
       setIsPremium(Boolean(data.premium));
-      setIsAdmin(Boolean(data.isAdmin));
+      setIsAdmin((prev) => prev || Boolean(data.isAdmin));
       setUsage(data.usage || null);
     } catch {
       if (redirectOnFail) window.location.href = "/login";
