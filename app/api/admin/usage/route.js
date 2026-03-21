@@ -1,5 +1,5 @@
 import { auth } from "../../../../auth";
-import { checkGuildRole, checkPremiumRole } from "../../../../lib/discord-role";
+import { checkGuildRole } from "../../../../lib/discord-role";
 import { getAdminDownloadUsageSnapshot } from "../../../../lib/rate-limit";
 
 const ADMIN_ROLE_ID = "1363231330732867665";
@@ -27,22 +27,18 @@ export async function GET() {
   }
 
   const snapshot = getAdminDownloadUsageSnapshot();
-  const rows = await Promise.all(
-    snapshot.map(async (entry) => {
-      const premium = await checkPremiumRole(entry.userId);
-      const isPremium = premium.allowed;
-      const dailyLimit = isPremium ? 500 : 50;
-      return {
-        userId: entry.userId,
-        tier: isPremium ? "premium" : "standard",
-        dailyLimit,
-        downloadsUsedToday: entry.downloadsUsedToday,
-        downloadsRemaining: Math.max(dailyLimit - entry.downloadsUsedToday, 0),
-        cooldownSec: entry.cooldownSec,
-        dayResetAt: entry.dayResetAt
-      };
-    })
-  );
+  const rows = snapshot.map((entry) => {
+    const dailyLimit = entry.dailyLimit === 500 ? 500 : 50;
+    return {
+      userId: entry.userId,
+      tier: dailyLimit === 500 ? "premium" : "standard",
+      dailyLimit,
+      downloadsUsedToday: entry.downloadsUsedToday,
+      downloadsRemaining: Math.max(dailyLimit - entry.downloadsUsedToday, 0),
+      cooldownSec: entry.cooldownSec,
+      dayResetAt: entry.dayResetAt
+    };
+  });
 
   rows.sort((a, b) => b.downloadsUsedToday - a.downloadsUsedToday);
 
