@@ -1,6 +1,7 @@
 import { auth } from "../../../../auth";
 import { checkGuildRole } from "../../../../lib/discord-role";
 import { getAdminUsageRows } from "../../../../lib/usage-store";
+import { getAdminStats } from "../../../../lib/stats-store";
 
 const ADMIN_ROLE_ID = "1363231330732867665";
 
@@ -27,6 +28,7 @@ export async function GET() {
   }
 
   const rows = await getAdminUsageRows();
+  const stats = await getAdminStats();
 
   rows.sort((a, b) => b.downloadsUsedToday - a.downloadsUsedToday);
 
@@ -40,6 +42,7 @@ export async function GET() {
       premiumUsers: rows.filter((row) => row.tier === "premium").length,
       standardUsers: rows.filter((row) => row.tier === "standard").length
     },
-    rows
+    rows,
+    stats
   });
 }

@@ -4,6 +4,7 @@ import { checkGuildMembership, checkPremiumRole } from "../../../../lib/discord-
 import { logField, sendDiscordLog } from "../../../../lib/discord-logs";
 import { getHeaderImageUrl, getSteamGameMeta } from "../../../../lib/steam-meta";
 import { consumeDownloadQuota, getUsageForUser } from "../../../../lib/usage-store";
+import { recordDownloadEvent } from "../../../../lib/stats-store";
 
 const API_BASE = "https://generator.ryuu.lol";
 
@@ -267,6 +268,14 @@ export async function POST(request, context) {
         }
       }
 
+      await recordDownloadEvent({
+        userId: session.user.id,
+        actionId: action,
+        appid: rawAppid,
+        gameName: gameMeta.name,
+        tier: isPremiumUser ? "premium" : "standard"
+      });
+
       await sendDiscordLog({
         title: "Action success",
         level: "success",
@@ -345,6 +354,14 @@ export async function POST(request, context) {
         );
       }
     }
+
+    await recordDownloadEvent({
+      userId: session.user.id,
+      actionId: action,
+      appid: rawAppid,
+      gameName: gameMeta.name,
+      tier: isPremiumUser ? "premium" : "standard"
+    });
 
     const filename = `${action}-${rawAppid}`;
     await sendDiscordLog({

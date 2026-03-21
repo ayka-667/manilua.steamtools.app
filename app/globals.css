@@ -566,6 +566,15 @@ body {
   background: color-mix(in srgb, var(--st-brand) 7%, var(--st-panel-strong));
 }
 
+.st-admin-metrics-wide {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.st-admin-section-title {
+  margin: 0 0 0.7rem;
+  font-size: 1rem;
+}
+
 .st-admin-table-wrap {
   overflow: auto;
 }
@@ -628,6 +637,10 @@ body {
   }
 
   .st-admin-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .st-admin-metrics-wide {
     grid-template-columns: 1fr;
   }
 }

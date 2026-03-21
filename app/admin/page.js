@@ -10,6 +10,15 @@ function formatDate(value) {
   return date.toLocaleString();
 }
 
+function formatActionLabel(actionId) {
+  if (actionId === "downloadManifest") return "Download Manifest";
+  if (actionId === "downloadLua") return "Download Lua";
+  if (actionId === "requestUpdate") return "Request Update";
+  if (actionId === "requestGame") return "Request Game";
+  if (actionId === "updateGame") return "Update Game";
+  return actionId || "-";
+}
+
 export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -115,7 +124,17 @@ export default function AdminPage() {
               <p>Standard users: {payload.totals?.standardUsers ?? 0}</p>
             </section>
 
+            <section className="st-panel st-admin-metrics st-admin-metrics-wide">
+              <p>Total downloads: {payload.stats?.overview?.totalDownloads ?? 0}</p>
+              <p>Downloads today (UTC): {payload.stats?.overview?.downloadsTodayUtc ?? 0}</p>
+              <p>Downloads last 24h: {payload.stats?.overview?.downloadsLast24h ?? 0}</p>
+              <p>Unique users (24h): {payload.stats?.overview?.uniqueUsersLast24h ?? 0}</p>
+              <p>Manifest downloads: {payload.stats?.overview?.manifestDownloads ?? 0}</p>
+              <p>Lua downloads: {payload.stats?.overview?.luaDownloads ?? 0}</p>
+            </section>
+
             <section className="st-panel st-admin-table-wrap">
+              <h2 className="st-admin-section-title">User Quotas</h2>
               <table className="st-admin-table">
                 <thead>
                   <tr>
@@ -143,6 +162,132 @@ export default function AdminPage() {
                         <td>{row.downloadsRemaining}</td>
                         <td>{row.cooldownSec > 0 ? `${row.cooldownSec}s` : "Ready"}</td>
                         <td>{formatDate(row.dayResetAt)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </section>
+
+            <section className="st-panel st-admin-table-wrap">
+              <h2 className="st-admin-section-title">Top Downloaded Games</h2>
+              <table className="st-admin-table">
+                <thead>
+                  <tr>
+                    <th>Game</th>
+                    <th>AppID</th>
+                    <th>Total</th>
+                    <th>Manifest</th>
+                    <th>Lua</th>
+                    <th>Last Download</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(payload.stats?.topGames || []).length === 0 ? (
+                    <tr>
+                      <td colSpan={6}>No download events yet.</td>
+                    </tr>
+                  ) : (
+                    payload.stats.topGames.map((row) => (
+                      <tr key={`${row.appid}-${row.lastDownloadedAt}`}>
+                        <td>{row.gameName}</td>
+                        <td>{row.appid}</td>
+                        <td>{row.totalDownloads}</td>
+                        <td>{row.manifestDownloads}</td>
+                        <td>{row.luaDownloads}</td>
+                        <td>{formatDate(row.lastDownloadedAt)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </section>
+
+            <section className="st-panel st-admin-table-wrap">
+              <h2 className="st-admin-section-title">Top Downloaders</h2>
+              <table className="st-admin-table">
+                <thead>
+                  <tr>
+                    <th>User ID</th>
+                    <th>Total</th>
+                    <th>Premium</th>
+                    <th>Standard</th>
+                    <th>Last Download</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(payload.stats?.topUsers || []).length === 0 ? (
+                    <tr>
+                      <td colSpan={5}>No users tracked yet.</td>
+                    </tr>
+                  ) : (
+                    payload.stats.topUsers.map((row) => (
+                      <tr key={`${row.userId}-${row.lastDownloadAt}`}>
+                        <td>{row.userId}</td>
+                        <td>{row.totalDownloads}</td>
+                        <td>{row.premiumDownloads}</td>
+                        <td>{row.standardDownloads}</td>
+                        <td>{formatDate(row.lastDownloadAt)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </section>
+
+            <section className="st-panel st-admin-table-wrap">
+              <h2 className="st-admin-section-title">Downloads by Hour (UTC, last 24h)</h2>
+              <table className="st-admin-table">
+                <thead>
+                  <tr>
+                    <th>Hour (UTC)</th>
+                    <th>Downloads</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(payload.stats?.downloadsByHour || []).length === 0 ? (
+                    <tr>
+                      <td colSpan={2}>No hourly data yet.</td>
+                    </tr>
+                  ) : (
+                    payload.stats.downloadsByHour.map((row) => (
+                      <tr key={row.hourUtc}>
+                        <td>{String(row.hourUtc).padStart(2, "0")}:00</td>
+                        <td>{row.totalDownloads}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </section>
+
+            <section className="st-panel st-admin-table-wrap">
+              <h2 className="st-admin-section-title">Recent Downloads</h2>
+              <table className="st-admin-table">
+                <thead>
+                  <tr>
+                    <th>When</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Game</th>
+                    <th>AppID</th>
+                    <th>Tier</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(payload.stats?.recentDownloads || []).length === 0 ? (
+                    <tr>
+                      <td colSpan={6}>No recent downloads yet.</td>
+                    </tr>
+                  ) : (
+                    payload.stats.recentDownloads.map((row, index) => (
+                      <tr key={`${row.createdAt}-${row.userId}-${index}`}>
+                        <td>{formatDate(row.createdAt)}</td>
+                        <td>{row.userId}</td>
+                        <td>{formatActionLabel(row.actionId)}</td>
+                        <td>{row.gameName}</td>
+                        <td>{row.appid}</td>
+                        <td>{row.tier}</td>
                       </tr>
                     ))
                   )}
