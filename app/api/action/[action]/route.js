@@ -42,6 +42,16 @@ function getActionLabel(action) {
   return ACTION_MAP[action]?.label || action;
 }
 
+function isSafeRedirectLocation(location) {
+  if (!location) return false;
+  try {
+    const url = new URL(location);
+    return !url.searchParams.has("auth_code");
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request, context) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -224,7 +234,8 @@ export async function POST(request, context) {
   try {
     upstream = await fetch(url.toString(), {
       method: "GET",
-      cache: "no-store"
+      cache: "no-store",
+      redirect: config.isDownload ? "manual" : "follow"
     });
   } catch {
     await sendDiscordLog({
@@ -237,6 +248,65 @@ export async function POST(request, context) {
       fields: [logField("Action", actionLabel), logField("AppID", rawAppid), logField("Game", gameMeta.name)]
     });
     return json({ error: "Upstream service unreachable." }, 502);
+  }
+
+  if (config.isDownload && upstream.status >= 300 && upstream.status < 400) {
+    const location = upstream.headers.get("location") || "";
+    if (isSafeRedirectLocation(location)) {
+      if (action === "downloadManifest" || action === "downloadLua") {
+        const dailyLimit = isPremiumUser ? 500 : 50;
+        const cooldownMs = isPremiumUser ? 2_000 : 10_000;
+        const resourceName = action === "downloadLua" ? "Lua" : "manifest";
+
+        const dailyConsume = applyRateLimit({
+          key: `downloads:day:${session.user.id}`,
+          limit: dailyLimit,
+          windowMs: DAY_MS
+        });
+        if (!dailyConsume.allowed) {
+          return json(
+            { error: `Daily ${resourceName.toLowerCase()} limit reached (${dailyLimit}/day).` },
+            429,
+            { "retry-after": String(dailyConsume.retryAfterSec) }
+          );
+        }
+
+        applyRateLimit({
+          key: `downloads:cooldown:${session.user.id}`,
+          limit: 1,
+          windowMs: cooldownMs
+        });
+      }
+
+      await sendDiscordLog({
+        title: "Action success",
+        level: "success",
+        description: `> Download redirect prepared successfully.\n> Game: **${gameMeta.name}**`,
+        session,
+        mentionUser: true,
+        imageUrl: gameImage,
+        fields: [logField("Action", actionLabel), logField("AppID", rawAppid), logField("Game", gameMeta.name)]
+      });
+
+      return new Response(null, {
+        status: 307,
+        headers: {
+          location,
+          "cache-control": "no-store"
+        }
+      });
+    }
+
+    // If upstream redirect includes auth_code, do not expose it to clients.
+    try {
+      upstream = await fetch(url.toString(), {
+        method: "GET",
+        cache: "no-store",
+        redirect: "follow"
+      });
+    } catch {
+      return json({ error: "Upstream service unreachable." }, 502);
+    }
   }
 
   if (!upstream.ok) {
