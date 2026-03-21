@@ -524,6 +524,11 @@ body {
 
 .st-admin-head h1 {
   margin: 0.2rem 0 0.3rem;
+  font-size: clamp(1.45rem, 2.2vw, 2.25rem);
+  line-height: 1.08;
+  color: var(--st-text);
+  letter-spacing: -0.03em;
+  -webkit-text-fill-color: initial;
 }
 
 .st-admin-refresh {
