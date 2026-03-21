@@ -8,11 +8,11 @@ const API_BASE = "https://generator.ryuu.lol";
 const DAY_MS = 86_400_000;
 
 const ACTION_MAP = {
-  downloadManifest: { endpoint: "secure_download", isDownload: true },
-  downloadLua: { endpoint: "resellerlua", isDownload: true },
-  requestUpdate: { endpoint: "resellerrequestupdate", isDownload: false },
-  requestGame: { endpoint: "resellerrequest", isDownload: false },
-  updateGame: { endpoint: "resellerupdate", isDownload: false }
+  downloadManifest: { endpoint: "secure_download", isDownload: true, label: "Download Manifest" },
+  downloadLua: { endpoint: "resellerlua", isDownload: true, label: "Download Lua" },
+  requestUpdate: { endpoint: "resellerrequestupdate", isDownload: false, label: "Request Update" },
+  requestGame: { endpoint: "resellerrequest", isDownload: false, label: "Request Game" },
+  updateGame: { endpoint: "resellerupdate", isDownload: false, label: "Update Game" }
 };
 
 function getClientIp(request) {
@@ -38,6 +38,10 @@ function getUpstreamUserMessage(status) {
   return `Upstream error ${status}.`;
 }
 
+function getActionLabel(action) {
+  return ACTION_MAP[action]?.label || action;
+}
+
 export async function POST(request, context) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -52,6 +56,7 @@ export async function POST(request, context) {
 
   const { action } = await context.params;
   const config = ACTION_MAP[action];
+  const actionLabel = getActionLabel(action);
   if (!config) {
     await sendDiscordLog({
       title: "Action blocked: unknown action",
@@ -59,7 +64,7 @@ export async function POST(request, context) {
       description: "Received an unsupported action ID.",
       session,
       mentionUser: true,
-      fields: [logField("Action", action, false)]
+      fields: [logField("Action", actionLabel, false)]
     });
     return json({ error: "Unknown action." }, 404);
   }
@@ -72,7 +77,7 @@ export async function POST(request, context) {
       description: "User attempted an action while not being a server member.",
       session,
       mentionUser: true,
-      fields: [logField("Action", action), logField("Reason", membership.reason || "Join required", false)]
+      fields: [logField("Action", actionLabel), logField("Reason", membership.reason || "Join required", false)]
     });
     return json({ error: membership.reason || "Join the Discord server first." }, 403);
   }
@@ -88,7 +93,7 @@ export async function POST(request, context) {
         description: "User attempted a premium-only action without the required role.",
         session,
         mentionUser: true,
-        fields: [logField("Action", action), logField("Reason", premium.reason || "Premium role required", false)]
+        fields: [logField("Action", actionLabel), logField("Reason", premium.reason || "Premium role required", false)]
       });
       return json({ error: premium.reason || "Premium role required." }, 403);
     }
@@ -109,7 +114,7 @@ export async function POST(request, context) {
       session,
       mentionUser: true,
       fields: [
-        logField("Action", action),
+        logField("Action", actionLabel),
         logField("IP", clientIp),
         logField("Retry", `${rate.retryAfterSec}s`)
       ]
@@ -154,7 +159,7 @@ export async function POST(request, context) {
         session,
         mentionUser: true,
         fields: [
-          logField("Action", action),
+          logField("Action", actionLabel),
           logField("Tier", tier),
           logField("Limit", `${dailyLimit}/day`),
           logField("Retry", `${dailyState.retryAfterSec}s`)
@@ -190,7 +195,7 @@ export async function POST(request, context) {
       description: "Could not parse request body as JSON.",
       session,
       mentionUser: true,
-      fields: [logField("Action", action, false)]
+      fields: [logField("Action", actionLabel, false)]
     });
     return json({ error: "Invalid JSON body." }, 400);
   }
@@ -203,7 +208,7 @@ export async function POST(request, context) {
       description: "Received malformed or empty AppID.",
       session,
       mentionUser: true,
-      fields: [logField("Action", action), logField("AppID", rawAppid || "empty")]
+      fields: [logField("Action", actionLabel), logField("AppID", rawAppid || "empty")]
     });
     return json({ error: "appid must be numeric (1-10 digits)." }, 400);
   }
@@ -229,7 +234,7 @@ export async function POST(request, context) {
       session,
       mentionUser: true,
       imageUrl: gameImage,
-      fields: [logField("Action", action), logField("AppID", rawAppid), logField("Game", gameMeta.name)]
+      fields: [logField("Action", actionLabel), logField("AppID", rawAppid), logField("Game", gameMeta.name)]
     });
     return json({ error: "Upstream service unreachable." }, 502);
   }
@@ -244,7 +249,7 @@ export async function POST(request, context) {
       mentionUser: true,
       imageUrl: gameImage,
       fields: [
-        logField("Action", action),
+        logField("Action", actionLabel),
         logField("AppID", rawAppid),
         logField("Game", gameMeta.name),
         logField("HTTP status", String(upstream.status)),
@@ -294,7 +299,7 @@ export async function POST(request, context) {
       session,
       mentionUser: true,
       imageUrl: gameImage,
-      fields: [logField("Action", action), logField("AppID", rawAppid), logField("Game", gameMeta.name)]
+      fields: [logField("Action", actionLabel), logField("AppID", rawAppid), logField("Game", gameMeta.name)]
     });
     return new Response(upstream.body, {
       status: 200,
@@ -332,7 +337,7 @@ export async function POST(request, context) {
     mentionUser: true,
     imageUrl: gameImage,
     fields: [
-      logField("Action", action),
+      logField("Action", actionLabel),
       logField("AppID", rawAppid),
       logField("Game", gameMeta.name),
       logField("Result", message, false)
