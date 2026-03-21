@@ -1,6 +1,6 @@
 import { auth } from "../../../../auth";
 import { checkGuildRole } from "../../../../lib/discord-role";
-import { getAdminDownloadUsageSnapshot } from "../../../../lib/rate-limit";
+import { getAdminUsageRows } from "../../../../lib/usage-store";
 
 const ADMIN_ROLE_ID = "1363231330732867665";
 
@@ -26,19 +26,7 @@ export async function GET() {
     return json({ error: adminCheck.reason || "Forbidden." }, 403);
   }
 
-  const snapshot = getAdminDownloadUsageSnapshot();
-  const rows = snapshot.map((entry) => {
-    const dailyLimit = entry.dailyLimit === 500 ? 500 : 50;
-    return {
-      userId: entry.userId,
-      tier: dailyLimit === 500 ? "premium" : "standard",
-      dailyLimit,
-      downloadsUsedToday: entry.downloadsUsedToday,
-      downloadsRemaining: Math.max(dailyLimit - entry.downloadsUsedToday, 0),
-      cooldownSec: entry.cooldownSec,
-      dayResetAt: entry.dayResetAt
-    };
-  });
+  const rows = await getAdminUsageRows();
 
   rows.sort((a, b) => b.downloadsUsedToday - a.downloadsUsedToday);
 

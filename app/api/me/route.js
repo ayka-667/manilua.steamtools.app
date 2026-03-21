@@ -1,8 +1,6 @@
 import { auth } from "../../../auth";
 import { checkGuildMembership, checkGuildRole, checkPremiumRole } from "../../../lib/discord-role";
-import { getRateLimitState } from "../../../lib/rate-limit";
-
-const DAY_MS = 86_400_000;
+import { getUsageForUser } from "../../../lib/usage-store";
 const ADMIN_ROLE_ID = "1363231330732867665";
 
 function json(data, status = 200) {
@@ -37,20 +35,8 @@ export async function GET() {
   const cooldownMs = isPremiumUser ? 2_000 : 10_000;
 
   const downloadQuota = userId
-    ? getRateLimitState({
-        key: `downloads:day:${userId}`,
-        limit: dailyLimit,
-        windowMs: DAY_MS
-      })
-    : { remaining: 0 };
-
-  const downloadCooldown = userId
-    ? getRateLimitState({
-        key: `downloads:cooldown:${userId}`,
-        limit: 1,
-        windowMs: cooldownMs
-      })
-    : { retryAfterSec: 0 };
+    ? await getUsageForUser(userId, dailyLimit, cooldownMs)
+    : { downloadsRemaining: 0, cooldownSec: 0 };
 
   return json({
     user: {
@@ -67,8 +53,8 @@ export async function GET() {
     usage: {
       tier: isPremiumUser ? "premium" : "standard",
       dailyLimit,
-      downloadsRemaining: downloadQuota.remaining,
-      cooldownSec: downloadCooldown.retryAfterSec
+      downloadsRemaining: downloadQuota.downloadsRemaining,
+      cooldownSec: downloadQuota.cooldownSec
     }
   });
 }

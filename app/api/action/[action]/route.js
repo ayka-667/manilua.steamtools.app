@@ -1,11 +1,11 @@
-import { applyRateLimit, getRateLimitState } from "../../../../lib/rate-limit";
+import { applyRateLimit } from "../../../../lib/rate-limit";
 import { auth } from "../../../../auth";
 import { checkGuildMembership, checkPremiumRole } from "../../../../lib/discord-role";
 import { logField, sendDiscordLog } from "../../../../lib/discord-logs";
 import { getHeaderImageUrl, getSteamGameMeta } from "../../../../lib/steam-meta";
+import { consumeDownloadQuota, getUsageForUser } from "../../../../lib/usage-store";
 
 const API_BASE = "https://generator.ryuu.lol";
-const DAY_MS = 86_400_000;
 
 const ACTION_MAP = {
   downloadManifest: { endpoint: "secure_download", isDownload: true, label: "Download Manifest" },
@@ -143,25 +143,17 @@ export async function POST(request, context) {
     const cooldownMs = isPremiumUser ? 2_000 : 10_000;
     const tier = isPremiumUser ? "premium" : "standard";
     const resourceName = action === "downloadLua" ? "Lua" : "manifest";
-    const cooldownState = getRateLimitState({
-      key: `downloads:cooldown:${session.user.id}`,
-      limit: 1,
-      windowMs: cooldownMs
-    });
-    if (cooldownState.retryAfterSec > 0) {
+    const usage = await getUsageForUser(session.user.id, dailyLimit, cooldownMs);
+
+    if (usage.cooldownSec > 0) {
       return json(
-        { error: `Cooldown active. Retry in ${cooldownState.retryAfterSec}s.` },
+        { error: `Cooldown active. Retry in ${usage.cooldownSec}s.` },
         429,
-        { "retry-after": String(cooldownState.retryAfterSec) }
+        { "retry-after": String(usage.cooldownSec) }
       );
     }
 
-    const dailyState = getRateLimitState({
-      key: `downloads:day:${session.user.id}`,
-      limit: dailyLimit,
-      windowMs: DAY_MS
-    });
-    if (dailyState.remaining <= 0) {
+    if (usage.downloadsRemaining <= 0) {
       await sendDiscordLog({
         title: `${resourceName} daily quota reached`,
         level: "warning",
@@ -172,13 +164,14 @@ export async function POST(request, context) {
           logField("Action", actionLabel),
           logField("Tier", tier),
           logField("Limit", `${dailyLimit}/day`),
-          logField("Retry", `${dailyState.retryAfterSec}s`)
+          logField("Retry", `${Math.max(Math.ceil((usage.dayResetAt - Date.now()) / 1000), 1)}s`)
         ]
       });
+      const retryAfterSec = Math.max(Math.ceil((usage.dayResetAt - Date.now()) / 1000), 1);
       return json(
         { error: `Daily ${resourceName.toLowerCase()} limit reached (${dailyLimit}/day).` },
         429,
-        { "retry-after": String(dailyState.retryAfterSec) }
+        { "retry-after": String(retryAfterSec) }
       );
     }
   }
@@ -257,25 +250,21 @@ export async function POST(request, context) {
         const dailyLimit = isPremiumUser ? 500 : 50;
         const cooldownMs = isPremiumUser ? 2_000 : 10_000;
         const resourceName = action === "downloadLua" ? "Lua" : "manifest";
-
-        const dailyConsume = applyRateLimit({
-          key: `downloads:day:${session.user.id}`,
-          limit: dailyLimit,
-          windowMs: DAY_MS
-        });
-        if (!dailyConsume.allowed) {
+        const quota = await consumeDownloadQuota(session.user.id, dailyLimit, cooldownMs);
+        if (!quota.ok) {
+          if (quota.reason === "cooldown") {
+            return json(
+              { error: `Cooldown active. Retry in ${quota.retryAfterSec}s.` },
+              429,
+              { "retry-after": String(quota.retryAfterSec) }
+            );
+          }
           return json(
             { error: `Daily ${resourceName.toLowerCase()} limit reached (${dailyLimit}/day).` },
             429,
-            { "retry-after": String(dailyConsume.retryAfterSec) }
+            { "retry-after": String(quota.retryAfterSec || 1) }
           );
         }
-
-        applyRateLimit({
-          key: `downloads:cooldown:${session.user.id}`,
-          limit: 1,
-          windowMs: cooldownMs
-        });
       }
 
       await sendDiscordLog({
@@ -340,25 +329,21 @@ export async function POST(request, context) {
       const dailyLimit = isPremiumUser ? 500 : 50;
       const cooldownMs = isPremiumUser ? 2_000 : 10_000;
       const resourceName = action === "downloadLua" ? "Lua" : "manifest";
-
-      const dailyConsume = applyRateLimit({
-        key: `downloads:day:${session.user.id}`,
-        limit: dailyLimit,
-        windowMs: DAY_MS
-      });
-      if (!dailyConsume.allowed) {
+      const quota = await consumeDownloadQuota(session.user.id, dailyLimit, cooldownMs);
+      if (!quota.ok) {
+        if (quota.reason === "cooldown") {
+          return json(
+            { error: `Cooldown active. Retry in ${quota.retryAfterSec}s.` },
+            429,
+            { "retry-after": String(quota.retryAfterSec) }
+          );
+        }
         return json(
           { error: `Daily ${resourceName.toLowerCase()} limit reached (${dailyLimit}/day).` },
           429,
-          { "retry-after": String(dailyConsume.retryAfterSec) }
+          { "retry-after": String(quota.retryAfterSec || 1) }
         );
       }
-
-      applyRateLimit({
-        key: `downloads:cooldown:${session.user.id}`,
-        limit: 1,
-        windowMs: cooldownMs
-      });
     }
 
     const filename = `${action}-${rawAppid}`;
