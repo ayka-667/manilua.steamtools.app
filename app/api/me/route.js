@@ -1,8 +1,9 @@
 import { auth } from "../../../auth";
-import { checkGuildMembership, checkPremiumRole } from "../../../lib/discord-role";
+import { checkGuildMembership, checkGuildRole, checkPremiumRole } from "../../../lib/discord-role";
 import { getRateLimitState } from "../../../lib/rate-limit";
 
 const DAY_MS = 86_400_000;
+const ADMIN_ROLE_ID = "1363231330732867665";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -27,6 +28,9 @@ export async function GET() {
 
   const premium = userId
     ? await checkPremiumRole(userId)
+    : { allowed: false, reason: "Missing Discord user ID in session. Please reconnect." };
+  const admin = userId
+    ? await checkGuildRole(userId, ADMIN_ROLE_ID, "Admin role required.")
     : { allowed: false, reason: "Missing Discord user ID in session. Please reconnect." };
   const isPremiumUser = premium.allowed;
   const dailyLimit = isPremiumUser ? 500 : 50;
@@ -57,6 +61,7 @@ export async function GET() {
     },
     inGuild: membership.allowed,
     guildReason: membership.reason,
+    isAdmin: admin.allowed,
     premium: premium.allowed,
     premiumReason: premium.reason,
     usage: {

@@ -532,7 +532,11 @@ body {
 }
 
 .st-admin-refresh {
-  margin-top: 0;
+  margin-top: 0.75rem;
+}
+
+.st-admin-hero {
+  text-align: center;
 }
 
 .st-admin-error {
@@ -636,6 +640,10 @@ body {
 
   .st-hero {
     text-align: left;
+  }
+
+  .st-admin-hero {
+    text-align: center;
   }
 
   .st-profile {

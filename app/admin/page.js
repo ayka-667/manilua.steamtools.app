@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { signOut } from "next-auth/react";
+import { useEffect, useRef, useState } from "react";
 
 function formatDate(value) {
   if (!value) return "-";
@@ -13,6 +14,9 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [payload, setPayload] = useState(null);
+  const [viewer, setViewer] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   async function loadData() {
     setLoading(true);
@@ -36,10 +40,59 @@ export default function AdminPage() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const response = await fetch("/api/me", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!active) return;
+        setViewer(data.user || null);
+      } catch {}
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    function onGlobalClick(event) {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("click", onGlobalClick);
+    return () => document.removeEventListener("click", onGlobalClick);
+  }, []);
+
   return (
     <main className="st-page">
+      <div className="st-profile st-profile-global" ref={menuRef}>
+        <button className="st-profile-btn" type="button" onClick={() => setMenuOpen((prev) => !prev)}>
+          {viewer?.image ? (
+            <img src={viewer.image} alt="Discord avatar" className="st-profile-avatar" />
+          ) : (
+            <span className="st-profile-fallback">D</span>
+          )}
+          <span className="st-profile-name">{viewer?.name || "Discord User"}</span>
+        </button>
+        {menuOpen ? (
+          <div className="st-profile-menu">
+            <p>{viewer?.tag || viewer?.name || "Connected"}</p>
+            <button type="button" onClick={() => (window.location.href = "/")}>
+              Home
+            </button>
+            <button type="button" onClick={() => signOut({ callbackUrl: "/login" })}>
+              Sign out
+            </button>
+          </div>
+        ) : null}
+      </div>
+
       <section className="st-shell st-admin-shell">
-        <header className="st-admin-head">
+        <header className="st-hero st-admin-hero">
           <div>
             <p className="st-kicker">SteamTools Admin</p>
             <h1>Admin Usage Panel</h1>

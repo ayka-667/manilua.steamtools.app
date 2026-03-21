@@ -44,6 +44,7 @@ export default function HomePage() {
   const [gameLoading, setGameLoading] = useState(false);
   const [viewer, setViewer] = useState(null);
   const [isPremium, setIsPremium] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [usage, setUsage] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [resolvedAppid, setResolvedAppid] = useState("");
@@ -66,6 +67,7 @@ export default function HomePage() {
       const data = await response.json();
       setViewer(data.user);
       setIsPremium(Boolean(data.premium));
+      setIsAdmin(Boolean(data.isAdmin));
       setUsage(data.usage || null);
     } catch {
       if (redirectOnFail) window.location.href = "/login";
@@ -252,6 +254,11 @@ export default function HomePage() {
                 Cooldown: <strong>{usage?.cooldownSec ? `${usage.cooldownSec}s` : "Ready"}</strong>
               </p>
             </div>
+            {isAdmin ? (
+              <button type="button" onClick={() => (window.location.href = "/admin")}>
+                Admin Panel
+              </button>
+            ) : null}
             <button type="button" onClick={() => signOut({ callbackUrl: "/login" })}>
               Sign out
             </button>
