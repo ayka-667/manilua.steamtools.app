@@ -510,6 +510,72 @@ body {
   filter: brightness(1.06);
 }
 
+.st-admin-shell {
+  width: min(1220px, 100%);
+}
+
+.st-admin-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.st-admin-head h1 {
+  margin: 0.2rem 0 0.3rem;
+}
+
+.st-admin-refresh {
+  margin-top: 0;
+}
+
+.st-admin-error {
+  border: 1px solid color-mix(in srgb, var(--st-danger) 65%, var(--st-border));
+  background: color-mix(in srgb, var(--st-danger) 12%, var(--st-panel-strong));
+  color: var(--st-text);
+  border-radius: 12px;
+  padding: 0.8rem;
+}
+
+.st-admin-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.st-admin-metrics p {
+  margin: 0;
+  border: 1px solid var(--st-border);
+  border-radius: 10px;
+  padding: 0.62rem 0.7rem;
+  background: color-mix(in srgb, var(--st-brand) 7%, var(--st-panel-strong));
+}
+
+.st-admin-table-wrap {
+  overflow: auto;
+}
+
+.st-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 820px;
+}
+
+.st-admin-table th,
+.st-admin-table td {
+  text-align: left;
+  padding: 0.6rem 0.55rem;
+  border-bottom: 1px solid var(--st-border);
+  font-size: 0.86rem;
+}
+
+.st-admin-table th {
+  color: var(--st-muted);
+  font-weight: 700;
+}
+
 @keyframes st-toast-in {
   from {
     opacity: 0;
@@ -546,6 +612,10 @@ body {
 
   .st-actions-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .st-admin-metrics {
+    grid-template-columns: 1fr;
   }
 }
 
