@@ -25,95 +25,104 @@ function formatPercent(value) {
   return `${Math.round(value)}%`;
 }
 
-function sanitizeMarkdown(value) {
-  return String(value || "-").replace(/[`*_~|]/g, "\\$&");
+function copyComputedStyles(source, target) {
+  const computed = window.getComputedStyle(source);
+  for (const property of computed) {
+    target.style.setProperty(property, computed.getPropertyValue(property), computed.getPropertyPriority(property));
+  }
+  target.style.setProperty("box-sizing", "border-box");
+
+  const sourceChildren = Array.from(source.children);
+  const targetChildren = Array.from(target.children);
+  for (let index = 0; index < sourceChildren.length; index += 1) {
+    if (targetChildren[index]) {
+      copyComputedStyles(sourceChildren[index], targetChildren[index]);
+    }
+  }
 }
 
-function buildMarkdownTable(headers, rows) {
-  const headerRow = `| ${headers.join(" | ")} |`;
-  const separatorRow = `| ${headers.map(() => "---").join(" | ")} |`;
-  const bodyRows = rows.map((row) => `| ${row.map((cell) => sanitizeMarkdown(cell)).join(" | ")} |`);
-  return [headerRow, separatorRow, ...bodyRows].join("\n");
+async function nodeToPngBlob(node) {
+  const rect = node.getBoundingClientRect();
+  const width = Math.ceil(rect.width);
+  const height = Math.ceil(rect.height);
+  const clone = node.cloneNode(true);
+
+  copyComputedStyles(node, clone);
+  clone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+  clone.style.margin = "0";
+
+  const wrapper = document.createElement("div");
+  wrapper.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+  wrapper.style.width = `${width}px`;
+  wrapper.style.height = `${height}px`;
+  wrapper.style.display = "flex";
+  wrapper.style.alignItems = "stretch";
+  wrapper.style.justifyContent = "stretch";
+  wrapper.appendChild(clone);
+
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+      <foreignObject x="0" y="0" width="100%" height="100%">${new XMLSerializer().serializeToString(wrapper)}</foreignObject>
+    </svg>
+  `;
+
+  const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+
+    const canvas = document.createElement("canvas");
+    const ratio = Math.max(window.devicePixelRatio || 1, 2);
+    canvas.width = width * ratio;
+    canvas.height = height * ratio;
+
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("Canvas unavailable.");
+    }
+
+    context.scale(ratio, ratio);
+    context.drawImage(image, 0, 0, width, height);
+
+    return await new Promise((resolve, reject) => {
+      canvas.toBlob((pngBlob) => {
+        if (pngBlob) {
+          resolve(pngBlob);
+        } else {
+          reject(new Error("Image export failed."));
+        }
+      }, "image/png");
+    });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
-function buildOverviewMarkdown(stats, totals, quotaRows) {
-  const overview = stats?.overview || {};
-  const topToday = stats?.topGamesToday || [];
-  const topGame = topToday[0];
-  const totalTierDownloads = (overview.premiumDownloads || 0) + (overview.standardDownloads || 0);
-  const premiumShare = totalTierDownloads > 0 ? (overview.premiumDownloads / totalTierDownloads) * 100 : 0;
-  const exhaustedToday = quotaRows.filter((row) => row.downloadsRemaining === 0).length;
-  const cooldownActive = quotaRows.filter((row) => row.cooldownSec > 0).length;
-
-  return [
-    "## SteamTools Admin Report",
-    "",
-    `- Downloads today (UTC): **${overview.downloadsTodayUtc || 0}**`,
-    `- Unique users today: **${overview.uniqueUsersTodayUtc || 0}**`,
-    `- Unique games today: **${overview.uniqueGamesTodayUtc || 0}**`,
-    `- Tracked users today: **${totals?.trackedUsers ?? 0}**`,
-    `- Premium users today: **${totals?.premiumUsers ?? 0}**`,
-    `- Standard users today: **${totals?.standardUsers ?? 0}**`,
-    `- Quotas exhausted today: **${exhaustedToday}**`,
-    `- Cooldowns active now: **${cooldownActive}**`,
-    `- Premium download share: **${formatPercent(premiumShare)}**`,
-    topGame ? `- Top game today: **${sanitizeMarkdown(topGame.gameName)}** (${topGame.totalDownloads} downloads)` : "- Top game today: **None**",
-    ""
-  ].join("\n");
+async function downloadNodeAsImage(node, filename) {
+  const blob = await nodeToPngBlob(node);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
-function buildTopGamesMarkdown(stats) {
-  const rows = (stats?.topGamesToday || []).slice(0, 10);
-  if (rows.length === 0) {
-    return ["## Top Downloaded Games Today", "", "_No downloads recorded today yet._"].join("\n");
+async function copyNodeAsImage(node) {
+  if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
+    throw new Error("Image clipboard is not supported in this browser.");
   }
 
-  return [
-    "## Top Downloaded Games Today",
-    "",
-    buildMarkdownTable(
-      ["#", "Game", "AppID", "Total", "Manifest", "Lua", "Last Download"],
-      rows.map((row, index) => [
-        index + 1,
-        row.gameName,
-        row.appid,
-        row.totalDownloads,
-        row.manifestDownloads,
-        row.luaDownloads,
-        formatDate(row.lastDownloadedAt)
-      ])
-    )
-  ].join("\n");
-}
-
-function buildTopUsersMarkdown(stats) {
-  const rows = (stats?.topUsersToday || []).slice(0, 10);
-  if (rows.length === 0) {
-    return ["## Top Downloaders Today", "", "_No user activity recorded today yet._"].join("\n");
-  }
-
-  return [
-    "## Top Downloaders Today",
-    "",
-    buildMarkdownTable(
-      ["#", "User ID", "Total", "Premium", "Standard", "Last Download"],
-      rows.map((row, index) => [
-        index + 1,
-        row.userId,
-        row.totalDownloads,
-        row.premiumDownloads,
-        row.standardDownloads,
-        formatDate(row.lastDownloadAt)
-      ])
-    )
-  ].join("\n");
-}
-
-async function copyText(text) {
-  if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
-    throw new Error("Clipboard unavailable in this browser.");
-  }
-  await navigator.clipboard.writeText(text);
+  const blob = await nodeToPngBlob(node);
+  await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
 }
 
 export default function AdminPage() {
@@ -125,6 +134,9 @@ export default function AdminPage() {
   const [visibleQuotaRows, setVisibleQuotaRows] = useState(DEFAULT_QUOTA_ROWS);
   const [copyFeedback, setCopyFeedback] = useState("");
   const menuRef = useRef(null);
+  const overviewCardRef = useRef(null);
+  const gamesCardRef = useRef(null);
+  const usersCardRef = useRef(null);
 
   async function loadData() {
     setLoading(true);
@@ -145,12 +157,24 @@ export default function AdminPage() {
     }
   }
 
-  async function handleCopy(label, builder) {
+  async function handleImageAction(label, ref, mode) {
+    const node = ref.current;
+    if (!node) {
+      setCopyFeedback(`Missing ${label.toLowerCase()} card.`);
+      return;
+    }
+
     try {
-      await copyText(builder());
-      setCopyFeedback(`${label} copied.`);
+      if (mode === "copy") {
+        await copyNodeAsImage(node);
+        setCopyFeedback(`${label} image copied.`);
+        return;
+      }
+
+      await downloadNodeAsImage(node, `${label.toLowerCase().replace(/\s+/g, "-")}.png`);
+      setCopyFeedback(`${label} image downloaded.`);
     } catch (err) {
-      setCopyFeedback(err?.message || `Failed to copy ${label.toLowerCase()}.`);
+      setCopyFeedback(err?.message || `Failed to export ${label.toLowerCase()} image.`);
     }
   }
 
@@ -160,7 +184,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!copyFeedback) return undefined;
-    const timeout = window.setTimeout(() => setCopyFeedback(""), 2500);
+    const timeout = window.setTimeout(() => setCopyFeedback(""), 3000);
     return () => window.clearTimeout(timeout);
   }, [copyFeedback]);
 
@@ -211,6 +235,9 @@ export default function AdminPage() {
     };
   }, [payload, quotaRows]);
 
+  const topGamesToday = (payload?.stats?.topGamesToday || []).slice(0, 5);
+  const topUsersToday = (payload?.stats?.topUsersToday || []).slice(0, 5);
+
   return (
     <main className="st-page">
       <div className="st-profile st-profile-global" ref={menuRef}>
@@ -241,7 +268,7 @@ export default function AdminPage() {
             <p className="st-kicker">SteamTools Admin</p>
             <h1>Admin Usage Panel</h1>
             <p className="st-subtitle">
-              Daily-focused view with Discord-ready reports and cleaner quota tracking.
+              Daily-focused view with cleaner quota tracking and image-ready Discord cards.
             </p>
           </div>
           <button type="button" className="st-login-btn st-admin-refresh" onClick={loadData} disabled={loading}>
@@ -256,29 +283,114 @@ export default function AdminPage() {
           <>
             <section className="st-admin-toolbar">
               <div className="st-admin-toolbar-copy">
-                <button
-                  type="button"
-                  className="st-admin-copy-btn"
-                  onClick={() => handleCopy("Overview", () => buildOverviewMarkdown(payload.stats, payload.totals, quotaRows))}
-                >
-                  Copy overview
+                <button type="button" className="st-admin-copy-btn" onClick={() => handleImageAction("Overview", overviewCardRef, "download")}>
+                  Download overview image
                 </button>
-                <button
-                  type="button"
-                  className="st-admin-copy-btn"
-                  onClick={() => handleCopy("Top games", () => buildTopGamesMarkdown(payload.stats))}
-                >
-                  Copy top games
+                <button type="button" className="st-admin-copy-btn" onClick={() => handleImageAction("Top games", gamesCardRef, "download")}>
+                  Download top games image
                 </button>
-                <button
-                  type="button"
-                  className="st-admin-copy-btn"
-                  onClick={() => handleCopy("Top users", () => buildTopUsersMarkdown(payload.stats))}
-                >
-                  Copy top users
+                <button type="button" className="st-admin-copy-btn" onClick={() => handleImageAction("Top users", usersCardRef, "download")}>
+                  Download top users image
+                </button>
+                <button type="button" className="st-admin-copy-btn" onClick={() => handleImageAction("Overview", overviewCardRef, "copy")}>
+                  Copy overview image
                 </button>
               </div>
-              <p className="st-admin-toolbar-note">Markdown format ready to paste into Discord.</p>
+              <p className="st-admin-toolbar-note">Each card is built in HTML/CSS, then exported to PNG.</p>
+            </section>
+
+            <section className="st-admin-share-grid">
+              <article className="st-admin-share-card" ref={overviewCardRef}>
+                <div className="st-admin-share-head">
+                  <div>
+                    <p className="st-admin-share-kicker">SteamTools Daily Report</p>
+                    <h2>Overview</h2>
+                  </div>
+                  <span className="st-admin-share-badge">UTC Today</span>
+                </div>
+                <div className="st-admin-share-metrics">
+                  <div>
+                    <strong>{payload.stats?.overview?.downloadsTodayUtc ?? 0}</strong>
+                    <span>Downloads</span>
+                  </div>
+                  <div>
+                    <strong>{payload.stats?.overview?.uniqueUsersTodayUtc ?? 0}</strong>
+                    <span>Users</span>
+                  </div>
+                  <div>
+                    <strong>{payload.stats?.overview?.uniqueGamesTodayUtc ?? 0}</strong>
+                    <span>Games</span>
+                  </div>
+                  <div>
+                    <strong>{formatPercent(derived.premiumShare)}</strong>
+                    <span>Premium share</span>
+                  </div>
+                </div>
+                <div className="st-admin-share-info">
+                  <p>Tracked users: {payload.totals?.trackedUsers ?? 0}</p>
+                  <p>Cooldowns active: {derived.cooldownActive}</p>
+                  <p>Quotas exhausted: {derived.exhaustedToday}</p>
+                  <p>Latest game: {derived.recentDownload?.gameName || "-"}</p>
+                </div>
+              </article>
+
+              <article className="st-admin-share-card" ref={gamesCardRef}>
+                <div className="st-admin-share-head">
+                  <div>
+                    <p className="st-admin-share-kicker">SteamTools Rankings</p>
+                    <h2>Top Games Today</h2>
+                  </div>
+                  <span className="st-admin-share-badge">Top 5</span>
+                </div>
+                <div className="st-admin-share-list">
+                  {topGamesToday.length === 0 ? (
+                    <p className="st-admin-share-empty">No downloads recorded today.</p>
+                  ) : (
+                    topGamesToday.map((row, index) => (
+                      <div key={`${row.appid}-${row.lastDownloadedAt}`} className="st-admin-share-row">
+                        <span className="st-admin-share-rank">#{index + 1}</span>
+                        <div className="st-admin-share-main">
+                          <strong>{row.gameName}</strong>
+                          <span>AppID {row.appid}</span>
+                        </div>
+                        <div className="st-admin-share-side">
+                          <strong>{row.totalDownloads}</strong>
+                          <span>downloads</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </article>
+
+              <article className="st-admin-share-card" ref={usersCardRef}>
+                <div className="st-admin-share-head">
+                  <div>
+                    <p className="st-admin-share-kicker">SteamTools Rankings</p>
+                    <h2>Top Users Today</h2>
+                  </div>
+                  <span className="st-admin-share-badge">Top 5</span>
+                </div>
+                <div className="st-admin-share-list">
+                  {topUsersToday.length === 0 ? (
+                    <p className="st-admin-share-empty">No user activity recorded today.</p>
+                  ) : (
+                    topUsersToday.map((row, index) => (
+                      <div key={`${row.userId}-${row.lastDownloadAt}`} className="st-admin-share-row">
+                        <span className="st-admin-share-rank">#{index + 1}</span>
+                        <div className="st-admin-share-main">
+                          <strong>{row.userId}</strong>
+                          <span>{row.premiumDownloads} premium / {row.standardDownloads} standard</span>
+                        </div>
+                        <div className="st-admin-share-side">
+                          <strong>{row.totalDownloads}</strong>
+                          <span>downloads</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </article>
             </section>
 
             <section className="st-panel st-admin-metrics">
@@ -424,7 +536,7 @@ export default function AdminPage() {
               <div className="st-admin-section-head">
                 <div>
                   <h2 className="st-admin-section-title">Top Downloaded Games Today</h2>
-                  <p className="st-admin-section-note">Best for quick Discord recap messages.</p>
+                  <p className="st-admin-section-note">This table stays here for the detailed admin view.</p>
                 </div>
               </div>
               <table className="st-admin-table">

@@ -578,6 +578,151 @@ body {
   font-size: 0.84rem;
 }
 
+.st-admin-share-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.st-admin-share-card {
+  min-height: 320px;
+  padding: 1.2rem;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(135, 92, 255, 0.22), transparent 55%),
+    radial-gradient(120% 100% at 100% 0%, rgba(93, 211, 255, 0.18), transparent 50%),
+    linear-gradient(180deg, rgba(18, 19, 34, 0.98), rgba(10, 11, 22, 0.98));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  display: grid;
+  gap: 1rem;
+}
+
+.st-admin-share-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.st-admin-share-kicker {
+  margin: 0 0 0.3rem;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.st-admin-share-head h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.st-admin-share-badge {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.st-admin-share-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.st-admin-share-metrics div,
+.st-admin-share-info,
+.st-admin-share-row {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.st-admin-share-metrics div {
+  border-radius: 18px;
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.22rem;
+}
+
+.st-admin-share-metrics strong {
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.st-admin-share-metrics span,
+.st-admin-share-main span,
+.st-admin-share-side span,
+.st-admin-share-empty,
+.st-admin-share-info p {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.st-admin-share-info {
+  border-radius: 18px;
+  padding: 0.9rem 1rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.st-admin-share-info p {
+  margin: 0;
+}
+
+.st-admin-share-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.st-admin-share-row {
+  border-radius: 18px;
+  padding: 0.8rem 0.85rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.st-admin-share-rank {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  background: linear-gradient(135deg, rgba(135, 92, 255, 0.9), rgba(93, 211, 255, 0.7));
+  color: #fff;
+}
+
+.st-admin-share-main,
+.st-admin-share-side {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.st-admin-share-main strong,
+.st-admin-share-side strong {
+  font-size: 0.98rem;
+}
+
+.st-admin-share-side {
+  text-align: right;
+}
+
+.st-admin-share-empty {
+  margin: 0;
+  border-radius: 18px;
+  padding: 0.95rem 1rem;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .st-admin-copy-feedback {
   margin-bottom: 0.85rem;
   border: 1px solid color-mix(in srgb, var(--st-ok) 45%, var(--st-border));
@@ -736,6 +881,10 @@ body {
   }
 
   .st-admin-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .st-admin-share-grid {
     grid-template-columns: 1fr;
   }
 }
