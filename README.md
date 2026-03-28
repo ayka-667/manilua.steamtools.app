@@ -32,6 +32,7 @@ DISCORD_BOT_TOKEN=your_discord_bot_token
 DISCORD_GUILD_ID=1363222357975502878
 DISCORD_PREMIUM_ROLE_ID=1436609444174761985
 DISCORD_DAILY_RECAP_CHANNEL_ID=1487572491307192461
+BROWSERLESS_WS_ENDPOINT=wss://your-browserless-endpoint
 CRON_SECRET=replace_with_a_long_random_secret_for_vercel_cron
 
 MYSQL_HOST=127.0.0.1
@@ -63,5 +64,6 @@ Open: `http://localhost:3000`
 1. Import repository in Vercel
 2. Add all environment variables from `.env.example`
 3. Set production `AUTH_URL` to your real domain
-4. Keep `CRON_SECRET` set so Vercel cron can call `/api/cron/daily-recap`
-5. Deploy
+4. Set `BROWSERLESS_WS_ENDPOINT` so production can capture the recap image in a remote browser
+5. Keep `CRON_SECRET` set so Vercel cron can call `/api/cron/daily-recap`
+6. Deploy

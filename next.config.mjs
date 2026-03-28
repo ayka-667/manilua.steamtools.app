@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  serverExternalPackages: ["@sparticuz/chromium", "playwright-core"]
+  serverExternalPackages: ["playwright-core"]
 };
 
 export default nextConfig;
