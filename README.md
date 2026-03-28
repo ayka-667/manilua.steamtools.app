@@ -31,6 +31,7 @@ DISCORD_CLIENT_SECRET=your_discord_oauth_client_secret
 DISCORD_BOT_TOKEN=your_discord_bot_token
 DISCORD_GUILD_ID=1363222357975502878
 DISCORD_PREMIUM_ROLE_ID=1436609444174761985
+CRON_SECRET=replace_with_a_long_random_secret_for_vercel_cron
 
 MYSQL_HOST=127.0.0.1
 MYSQL_PORT=3306
@@ -61,4 +62,5 @@ Open: `http://localhost:3000`
 1. Import repository in Vercel
 2. Add all environment variables from `.env.example`
 3. Set production `AUTH_URL` to your real domain
-4. Deploy
+4. Keep `CRON_SECRET` set so Vercel cron can call `/api/cron/daily-recap`
+5. Deploy
