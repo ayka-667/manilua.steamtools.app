@@ -237,6 +237,7 @@ export default function AdminPage() {
 
   const topGamesToday = (payload?.stats?.topGamesToday || []).slice(0, 5);
   const topUsersToday = (payload?.stats?.topUsersToday || []).slice(0, 5);
+  const overview = payload?.stats?.overview || {};
 
   return (
     <main className="st-page">
@@ -268,7 +269,7 @@ export default function AdminPage() {
             <p className="st-kicker">SteamTools Admin</p>
             <h1>Admin Usage Panel</h1>
             <p className="st-subtitle">
-              Daily-focused view with cleaner quota tracking and image-ready Discord cards.
+              Lifetime stats stay visible, with daily highlights and image-ready Discord cards.
             </p>
           </div>
           <button type="button" className="st-login-btn st-admin-refresh" onClick={loadData} disabled={loading}>
@@ -303,33 +304,34 @@ export default function AdminPage() {
               <article className="st-admin-share-card" ref={overviewCardRef}>
                 <div className="st-admin-share-head">
                   <div>
-                    <p className="st-admin-share-kicker">SteamTools Daily Report</p>
+                    <p className="st-admin-share-kicker">SteamTools Report</p>
                     <h2>Overview</h2>
                   </div>
-                  <span className="st-admin-share-badge">UTC Today</span>
+                  <span className="st-admin-share-badge">Today + Lifetime</span>
                 </div>
                 <div className="st-admin-share-metrics">
                   <div>
-                    <strong>{payload.stats?.overview?.downloadsTodayUtc ?? 0}</strong>
-                    <span>Downloads</span>
+                    <strong>{overview.downloadsTodayUtc ?? 0}</strong>
+                    <span>Downloads today</span>
                   </div>
                   <div>
-                    <strong>{payload.stats?.overview?.uniqueUsersTodayUtc ?? 0}</strong>
-                    <span>Users</span>
+                    <strong>{overview.totalDownloads ?? 0}</strong>
+                    <span>Downloads lifetime</span>
                   </div>
                   <div>
-                    <strong>{payload.stats?.overview?.uniqueGamesTodayUtc ?? 0}</strong>
-                    <span>Games</span>
+                    <strong>{overview.uniqueUsersTodayUtc ?? 0}</strong>
+                    <span>Users today</span>
                   </div>
                   <div>
-                    <strong>{formatPercent(derived.premiumShare)}</strong>
-                    <span>Premium share</span>
+                    <strong>{overview.uniqueGames ?? 0}</strong>
+                    <span>Games lifetime</span>
                   </div>
                 </div>
                 <div className="st-admin-share-info">
-                  <p>Tracked users: {payload.totals?.trackedUsers ?? 0}</p>
+                  <p>Tracked users today: {payload.totals?.trackedUsers ?? 0}</p>
+                  <p>Unique games today: {overview.uniqueGamesTodayUtc ?? 0}</p>
+                  <p>Premium share lifetime: {formatPercent(derived.premiumShare)}</p>
                   <p>Cooldowns active: {derived.cooldownActive}</p>
-                  <p>Quotas exhausted: {derived.exhaustedToday}</p>
                   <p>Latest game: {derived.recentDownload?.gameName || "-"}</p>
                 </div>
               </article>
@@ -340,7 +342,7 @@ export default function AdminPage() {
                     <p className="st-admin-share-kicker">SteamTools Rankings</p>
                     <h2>Top Games Today</h2>
                   </div>
-                  <span className="st-admin-share-badge">Top 5</span>
+                  <span className="st-admin-share-badge">Today</span>
                 </div>
                 <div className="st-admin-share-list">
                   {topGamesToday.length === 0 ? (
@@ -369,7 +371,7 @@ export default function AdminPage() {
                     <p className="st-admin-share-kicker">SteamTools Rankings</p>
                     <h2>Top Users Today</h2>
                   </div>
-                  <span className="st-admin-share-badge">Top 5</span>
+                  <span className="st-admin-share-badge">Today</span>
                 </div>
                 <div className="st-admin-share-list">
                   {topUsersToday.length === 0 ? (
@@ -395,6 +397,21 @@ export default function AdminPage() {
 
             <section className="st-panel st-admin-metrics">
               <p>
+                <strong>{overview.totalDownloads ?? 0}</strong>
+                <span>Total downloads lifetime</span>
+              </p>
+              <p>
+                <strong>{overview.uniqueGames ?? 0}</strong>
+                <span>Unique games lifetime</span>
+              </p>
+              <p>
+                <strong>{overview.uniqueUsersLast24h ?? 0}</strong>
+                <span>Unique users last 24h</span>
+              </p>
+            </section>
+
+            <section className="st-panel st-admin-metrics st-admin-metrics-wide">
+              <p>
                 <strong>{payload.totals?.trackedUsers ?? 0}</strong>
                 <span>Tracked users today</span>
               </p>
@@ -410,19 +427,19 @@ export default function AdminPage() {
 
             <section className="st-panel st-admin-metrics st-admin-metrics-wide">
               <p>
-                <strong>{payload.stats?.overview?.downloadsTodayUtc ?? 0}</strong>
+                <strong>{overview.downloadsTodayUtc ?? 0}</strong>
                 <span>Downloads today (UTC)</span>
               </p>
               <p>
-                <strong>{payload.stats?.overview?.uniqueUsersTodayUtc ?? 0}</strong>
+                <strong>{overview.uniqueUsersTodayUtc ?? 0}</strong>
                 <span>Unique users today</span>
               </p>
               <p>
-                <strong>{payload.stats?.overview?.uniqueGamesTodayUtc ?? 0}</strong>
+                <strong>{overview.uniqueGamesTodayUtc ?? 0}</strong>
                 <span>Unique games today</span>
               </p>
               <p>
-                <strong>{payload.stats?.overview?.downloadsLast24h ?? 0}</strong>
+                <strong>{overview.downloadsLast24h ?? 0}</strong>
                 <span>Downloads last 24h</span>
               </p>
               <p>
@@ -439,9 +456,9 @@ export default function AdminPage() {
               <article className="st-panel st-admin-highlight">
                 <h2 className="st-admin-section-title">Today Snapshot</h2>
                 <p>Quotas exhausted: {derived.exhaustedToday}</p>
-                <p>Manifest downloads: {payload.stats?.overview?.manifestDownloads ?? 0}</p>
-                <p>Lua downloads: {payload.stats?.overview?.luaDownloads ?? 0}</p>
-                <p>Total games tracked: {payload.stats?.overview?.uniqueGames ?? 0}</p>
+                <p>Manifest downloads lifetime: {overview.manifestDownloads ?? 0}</p>
+                <p>Lua downloads lifetime: {overview.luaDownloads ?? 0}</p>
+                <p>Total games tracked lifetime: {overview.uniqueGames ?? 0}</p>
               </article>
 
               <article className="st-panel st-admin-highlight">
