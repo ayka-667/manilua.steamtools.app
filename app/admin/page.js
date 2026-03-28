@@ -2,6 +2,12 @@
 
 import { signOut } from "next-auth/react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  AdminOverviewShareCard,
+  AdminTopGamesShareCard,
+  AdminTopUsersShareCard,
+  formatPercent
+} from "../../lib/admin-report-cards";
 
 const DEFAULT_QUOTA_ROWS = 30;
 
@@ -19,10 +25,6 @@ function formatActionLabel(actionId) {
   if (actionId === "requestGame") return "Request Game";
   if (actionId === "updateGame") return "Update Game";
   return actionId || "-";
-}
-
-function formatPercent(value) {
-  return `${Math.round(value)}%`;
 }
 
 function copyComputedStyles(source, target) {
@@ -301,98 +303,29 @@ export default function AdminPage() {
             </section>
 
             <section className="st-admin-share-grid">
-              <article className="st-admin-share-card" ref={overviewCardRef}>
-                <div className="st-admin-share-head">
-                  <div>
-                    <p className="st-admin-share-kicker">SteamTools Report</p>
-                    <h2>Overview</h2>
-                  </div>
-                  <span className="st-admin-share-badge">Today + Lifetime</span>
-                </div>
-                <div className="st-admin-share-metrics">
-                  <div>
-                    <strong>{overview.downloadsTodayUtc ?? 0}</strong>
-                    <span>Downloads today</span>
-                  </div>
-                  <div>
-                    <strong>{overview.totalDownloads ?? 0}</strong>
-                    <span>All-time downloads</span>
-                  </div>
-                  <div>
-                    <strong>{overview.uniqueUsersTodayUtc ?? 0}</strong>
-                    <span>Users today</span>
-                  </div>
-                  <div>
-                    <strong>{overview.uniqueGames ?? 0}</strong>
-                    <span>All-time games</span>
-                  </div>
-                </div>
-                <div className="st-admin-share-info">
-                  <p>Tracked users today: {payload.totals?.trackedUsers ?? 0}</p>
-                  <p>Unique games today: {overview.uniqueGamesTodayUtc ?? 0}</p>
-                  <p>All-time premium share: {formatPercent(derived.premiumShare)}</p>
-                  <p>Cooldowns active: {derived.cooldownActive}</p>
-                  <p>Latest game: {derived.recentDownload?.gameName || "-"}</p>
-                </div>
-              </article>
+              <div ref={overviewCardRef}>
+                <AdminOverviewShareCard
+                  overview={{
+                    downloadsToday: overview.downloadsTodayUtc ?? 0,
+                    totalDownloads: overview.totalDownloads ?? 0,
+                    usersToday: overview.uniqueUsersTodayUtc ?? 0,
+                    totalGames: overview.uniqueGames ?? 0,
+                    gamesToday: overview.uniqueGamesTodayUtc ?? 0
+                  }}
+                  trackedUsers={payload.totals?.trackedUsers ?? 0}
+                  premiumShare={derived.premiumShare}
+                  cooldownActive={derived.cooldownActive}
+                  latestGame={derived.recentDownload?.gameName || "-"}
+                />
+              </div>
 
-              <article className="st-admin-share-card" ref={gamesCardRef}>
-                <div className="st-admin-share-head">
-                  <div>
-                    <p className="st-admin-share-kicker">SteamTools Rankings</p>
-                    <h2>Top Games Today</h2>
-                  </div>
-                  <span className="st-admin-share-badge">Today</span>
-                </div>
-                <div className="st-admin-share-list">
-                  {topGamesToday.length === 0 ? (
-                    <p className="st-admin-share-empty">No downloads recorded today.</p>
-                  ) : (
-                    topGamesToday.map((row, index) => (
-                      <div key={`${row.appid}-${row.lastDownloadedAt}`} className="st-admin-share-row">
-                        <span className="st-admin-share-rank">#{index + 1}</span>
-                        <div className="st-admin-share-main">
-                          <strong>{row.gameName}</strong>
-                          <span>AppID {row.appid}</span>
-                        </div>
-                        <div className="st-admin-share-side">
-                          <strong>{row.totalDownloads}</strong>
-                          <span>downloads</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </article>
+              <div ref={gamesCardRef}>
+                <AdminTopGamesShareCard rows={topGamesToday} />
+              </div>
 
-              <article className="st-admin-share-card" ref={usersCardRef}>
-                <div className="st-admin-share-head">
-                  <div>
-                    <p className="st-admin-share-kicker">SteamTools Rankings</p>
-                    <h2>Top Users Today</h2>
-                  </div>
-                  <span className="st-admin-share-badge">Today</span>
-                </div>
-                <div className="st-admin-share-list">
-                  {topUsersToday.length === 0 ? (
-                    <p className="st-admin-share-empty">No user activity recorded today.</p>
-                  ) : (
-                    topUsersToday.map((row, index) => (
-                      <div key={`${row.userId}-${row.lastDownloadAt}`} className="st-admin-share-row">
-                        <span className="st-admin-share-rank">#{index + 1}</span>
-                        <div className="st-admin-share-main">
-                          <strong>{row.userId}</strong>
-                          <span>{row.premiumDownloads} premium / {row.standardDownloads} standard</span>
-                        </div>
-                        <div className="st-admin-share-side">
-                          <strong>{row.totalDownloads}</strong>
-                          <span>downloads</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </article>
+              <div ref={usersCardRef}>
+                <AdminTopUsersShareCard rows={topUsersToday} />
+              </div>
             </section>
 
             <section className="st-panel st-admin-metrics">

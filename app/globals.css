@@ -834,6 +834,45 @@ body {
   padding-top: 0.9rem;
 }
 
+.st-report-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(900px 500px at 4% -10%, color-mix(in srgb, var(--st-brand) 14%, transparent), transparent),
+    radial-gradient(700px 420px at 102% 8%, color-mix(in srgb, var(--st-brand-2) 16%, transparent), transparent),
+    var(--st-bg);
+}
+
+.st-report-page-transparent {
+  padding: 0;
+  background: transparent;
+}
+
+.st-report-shell {
+  width: 1200px;
+  max-width: 1200px;
+  display: grid;
+  gap: 12px;
+}
+
+.st-report-combined-shell {
+  width: 1920px;
+  min-width: 1920px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 0;
+}
+
+.st-report-date,
+.st-report-footer,
+.st-report-error {
+  color: var(--st-muted);
+  font-size: 0.95rem;
+}
+
 @keyframes st-toast-in {
   from {
     opacity: 0;
