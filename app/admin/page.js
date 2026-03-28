@@ -316,7 +316,7 @@ export default function AdminPage() {
                   </div>
                   <div>
                     <strong>{overview.totalDownloads ?? 0}</strong>
-                    <span>Downloads lifetime</span>
+                    <span>All-time downloads</span>
                   </div>
                   <div>
                     <strong>{overview.uniqueUsersTodayUtc ?? 0}</strong>
@@ -324,13 +324,13 @@ export default function AdminPage() {
                   </div>
                   <div>
                     <strong>{overview.uniqueGames ?? 0}</strong>
-                    <span>Games lifetime</span>
+                    <span>All-time games</span>
                   </div>
                 </div>
                 <div className="st-admin-share-info">
                   <p>Tracked users today: {payload.totals?.trackedUsers ?? 0}</p>
                   <p>Unique games today: {overview.uniqueGamesTodayUtc ?? 0}</p>
-                  <p>Premium share lifetime: {formatPercent(derived.premiumShare)}</p>
+                  <p>All-time premium share: {formatPercent(derived.premiumShare)}</p>
                   <p>Cooldowns active: {derived.cooldownActive}</p>
                   <p>Latest game: {derived.recentDownload?.gameName || "-"}</p>
                 </div>
@@ -398,11 +398,11 @@ export default function AdminPage() {
             <section className="st-panel st-admin-metrics">
               <p>
                 <strong>{overview.totalDownloads ?? 0}</strong>
-                <span>Total downloads lifetime</span>
+                <span>All-time downloads</span>
               </p>
               <p>
                 <strong>{overview.uniqueGames ?? 0}</strong>
-                <span>Unique games lifetime</span>
+                <span>All-time games</span>
               </p>
               <p>
                 <strong>{overview.uniqueUsersLast24h ?? 0}</strong>
@@ -456,9 +456,9 @@ export default function AdminPage() {
               <article className="st-panel st-admin-highlight">
                 <h2 className="st-admin-section-title">Today Snapshot</h2>
                 <p>Quotas exhausted: {derived.exhaustedToday}</p>
-                <p>Manifest downloads lifetime: {overview.manifestDownloads ?? 0}</p>
-                <p>Lua downloads lifetime: {overview.luaDownloads ?? 0}</p>
-                <p>Total games tracked lifetime: {overview.uniqueGames ?? 0}</p>
+                <p>All-time manifest downloads: {overview.manifestDownloads ?? 0}</p>
+                <p>All-time Lua downloads: {overview.luaDownloads ?? 0}</p>
+                <p>All-time tracked games: {overview.uniqueGames ?? 0}</p>
               </article>
 
               <article className="st-panel st-admin-highlight">
