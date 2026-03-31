@@ -446,43 +446,18 @@ body {
 }
 
 .st-bulk-panel-locked {
-  border-color: color-mix(in srgb, #9ea4b8 28%, var(--st-border));
-  background:
-    repeating-linear-gradient(
-      45deg,
-      rgba(150, 157, 175, 0.18),
-      rgba(150, 157, 175, 0.18) 15px,
-      rgba(140, 147, 165, 0.14) 15px,
-      rgba(140, 147, 165, 0.14) 30px
-    ),
-    linear-gradient(180deg, rgba(170, 176, 196, 0.1), rgba(170, 176, 196, 0.06)),
-    var(--st-panel-strong);
+  border-color: color-mix(in srgb, #9ea4b8 18%, var(--st-border));
+  background: rgba(110, 117, 140, 0.12);
+  opacity: 0.65;
 }
 
 .st-bulk-panel-locked::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(115, 122, 140, 0.16);
+  background: none;
   pointer-events: none;
   z-index: 0;
-  border-radius: inherit;
-}
-
-.st-bulk-panel-locked::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 2px,
-      rgba(165, 172, 188, 0.22) 2px,
-      rgba(165, 172, 188, 0.22) 4px
-    );
-  pointer-events: none;
-  z-index: 1;
   border-radius: inherit;
 }
 
