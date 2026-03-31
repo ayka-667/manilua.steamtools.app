@@ -262,6 +262,10 @@ body {
   gap: 0.8rem;
 }
 
+.st-provider-grid-single {
+  grid-template-columns: 1fr;
+}
+
 .st-history {
   margin-top: 0.95rem;
 }
@@ -548,12 +552,19 @@ body {
   border: 1px solid color-mix(in srgb, var(--st-brand) 25%, var(--st-border));
   border-radius: 20px;
   padding: 1.2rem;
-  padding-top: 3.1rem;
   background:
     radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--st-brand) 14%, transparent), transparent 45%),
     var(--st-panel);
   box-shadow: var(--st-shadow);
   position: relative;
+}
+
+.st-modal-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
 }
 
 .st-modal-card h2 {
@@ -562,9 +573,6 @@ body {
 }
 
 .st-modal-close {
-  position: absolute;
-  top: 0.95rem;
-  right: 0.95rem;
   border: 1px solid var(--st-border);
   background: color-mix(in srgb, var(--st-panel-strong) 88%, black);
   color: var(--st-text);
