@@ -548,6 +548,7 @@ body {
   border: 1px solid color-mix(in srgb, var(--st-brand) 25%, var(--st-border));
   border-radius: 20px;
   padding: 1.2rem;
+  padding-top: 3.1rem;
   background:
     radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--st-brand) 14%, transparent), transparent 45%),
     var(--st-panel);
@@ -562,14 +563,17 @@ body {
 
 .st-modal-close {
   position: absolute;
-  top: 0.8rem;
-  right: 0.8rem;
+  top: 0.95rem;
+  right: 0.95rem;
   border: 1px solid var(--st-border);
-  background: transparent;
+  background: color-mix(in srgb, var(--st-panel-strong) 88%, black);
   color: var(--st-text);
   border-radius: 10px;
   padding: 0.45rem 0.7rem;
   cursor: pointer;
+  line-height: 1;
+  font-weight: 700;
+  z-index: 1;
 }
 
 .st-login-page {

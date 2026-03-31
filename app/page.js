@@ -479,29 +479,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="st-panel st-premium-ad">
-          <div>
-            <p className="st-kicker">Get Premium</p>
-            <h2>Unlock faster downloads and premium-only tools</h2>
-            <p className="st-helper">
-              Premium users get higher download limits, shorter cooldowns, and access to update actions.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="st-login-btn"
-            onClick={() => {
-              if (viewer?.premiumUrl) {
-                window.open(viewer.premiumUrl, "_blank", "noopener,noreferrer");
-                return;
-              }
-              pushToast("error", "Premium link not configured yet.");
-            }}
-          >
-            Get Premium
-          </button>
-        </section>
-
         <footer className="st-kicker st-powered-by">powered by steamtools.app</footer>
       </section>
 
