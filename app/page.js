@@ -339,19 +339,69 @@ export default function HomePage() {
         </header>
 
         <section className="st-main-grid">
-          <div className="st-panel st-input-panel">
-            <label htmlFor="appid" className="st-field-label">
-              Steam AppID or game name
-            </label>
-            <input
-              id="appid"
-              className="st-appid-input"
-              type="text"
-              value={query}
-              placeholder="Example: 570 or Elden Ring"
-              onChange={(event) => setQuery(event.target.value)}
-            />
-            <p className="st-helper">Use a numeric AppID or a game name. All requests go through the secure backend.</p>
+          <div className="st-input-stack">
+            <div className="st-panel st-input-panel">
+              <label htmlFor="appid" className="st-field-label">
+                Steam AppID or game name
+              </label>
+              <input
+                id="appid"
+                className="st-appid-input"
+                type="text"
+                value={query}
+                placeholder="Example: 570 or Elden Ring"
+                onChange={(event) => setQuery(event.target.value)}
+              />
+              <p className="st-helper">Use a numeric AppID or a game name. All requests go through the secure backend.</p>
+
+              {query.trim() ? (
+                <div className="st-game-notice" aria-live="polite">
+                  {gameLoading ? (
+                    <div className="st-game-notice-loading">
+                      <div className="st-game-media st-skeleton" />
+                      <div className="st-game-lines">
+                        <span />
+                        <span />
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {game?.headerImage ? (
+                        <img
+                          src={game.headerImage}
+                          alt={`${game?.name || "Game"} header`}
+                          className="st-game-media"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="st-game-media st-game-media-empty" aria-hidden="true">
+                          No cover
+                        </div>
+                      )}
+                      <div className="st-game-mini-text">
+                        <p className="st-game-appid">APPID #{effectiveAppid || "N/A"}</p>
+                        <h2>{game?.name || "Unknown AppID"}</h2>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : null}
+
+              <div className="st-history">
+                <h2>Recent AppIDs</h2>
+                <div className="st-history-list">
+                  {history.length === 0 ? (
+                    <p className="st-history-empty">No history yet</p>
+                  ) : (
+                    history.map((item) => (
+                      <button key={item} type="button" onClick={() => setQuery(item)} className="st-history-chip">
+                        {item}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
 
             <div className="st-provider-corner">
               <div className="st-tool-card st-provider-card">
@@ -370,54 +420,7 @@ export default function HomePage() {
                     </option>
                   ))}
                 </select>
-              </div>
-            </div>
-
-            {query.trim() ? (
-              <div className="st-game-notice" aria-live="polite">
-                {gameLoading ? (
-                  <div className="st-game-notice-loading">
-                    <div className="st-game-media st-skeleton" />
-                    <div className="st-game-lines">
-                      <span />
-                      <span />
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {game?.headerImage ? (
-                      <img
-                        src={game.headerImage}
-                        alt={`${game?.name || "Game"} header`}
-                        className="st-game-media"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="st-game-media st-game-media-empty" aria-hidden="true">
-                        No cover
-                      </div>
-                    )}
-                    <div className="st-game-mini-text">
-                      <p className="st-game-appid">APPID #{effectiveAppid || "N/A"}</p>
-                      <h2>{game?.name || "Unknown AppID"}</h2>
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : null}
-
-            <div className="st-history">
-              <h2>Recent AppIDs</h2>
-              <div className="st-history-list">
-                {history.length === 0 ? (
-                  <p className="st-history-empty">No history yet</p>
-                ) : (
-                  history.map((item) => (
-                    <button key={item} type="button" onClick={() => setQuery(item)} className="st-history-chip">
-                      {item}
-                    </button>
-                  ))
-                )}
+                <p className="st-helper">Used for normal manifest downloads and for Bulk Manifest.</p>
               </div>
             </div>
           </div>
@@ -460,7 +463,7 @@ export default function HomePage() {
             </span>
           </div>
           <div className="st-bulk-controls">
-            <div className="st-tool-card">
+            <div className="st-tool-card st-bulk-control-card">
               <label htmlFor="bulk-count" className="st-field-label">
                 Bulk amount
               </label>
@@ -476,6 +479,7 @@ export default function HomePage() {
                   </option>
                 ))}
               </select>
+              <p className="st-helper">Each file counts like a normal manifest download and respects your current quota.</p>
             </div>
             <button
               type="button"
@@ -486,7 +490,6 @@ export default function HomePage() {
               {busyAction === "bulkManifest" ? "Processing..." : `Download ${bulkCount} random manifests`}
             </button>
           </div>
-          <p className="st-helper">Each file counts like a normal manifest download and respects your current quota.</p>
         </section>
 
         <footer className="st-kicker st-powered-by">powered by steamtools.app</footer>
