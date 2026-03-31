@@ -54,10 +54,8 @@ export async function GET() {
     usage: {
       tier: isPremiumUser ? "premium" : "standard",
       dailyLimit,
-      downloadsUsedToday: downloadQuota.downloadsUsedToday,
       downloadsRemaining: downloadQuota.downloadsRemaining,
-      cooldownSec: downloadQuota.cooldownSec,
-      dayResetAt: downloadQuota.dayResetAt
+      cooldownSec: downloadQuota.cooldownSec
     }
   });
 }
