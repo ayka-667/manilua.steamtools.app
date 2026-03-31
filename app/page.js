@@ -5,11 +5,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 const ACTIONS = [
   { id: "downloadManifest", label: "Download Manifest", tone: "primary" },
+  { id: "bulkManifest", label: "Bulk Manifest", tone: "secondary" },
   { id: "downloadLua", label: "Download Lua", tone: "secondary" },
   { id: "requestUpdate", label: "Request Update", tone: "neutral" },
   { id: "requestGame", label: "Request Game", tone: "neutral" },
   { id: "updateGame", label: "Update Game", tone: "neutral" }
 ];
+
+const MANIFEST_PROVIDERS = [{ id: "steamtools", label: "SteamTools API" }];
+const BULK_OPTIONS = [3, 5, 10];
 
 const HISTORY_KEY = "steamtools_recent_appids";
 const PREMIUM_ACTIONS = new Set(["requestUpdate", "updateGame"]);
@@ -48,6 +52,8 @@ export default function HomePage() {
   const [usage, setUsage] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [resolvedAppid, setResolvedAppid] = useState("");
+  const [manifestProvider, setManifestProvider] = useState("steamtools");
+  const [bulkCount, setBulkCount] = useState(5);
   const menuRef = useRef(null);
 
   const isAppidValid = useMemo(() => /^\d{1,10}$/.test(query), [query]);
@@ -168,6 +174,11 @@ export default function HomePage() {
   }
 
   async function runAction(actionId) {
+    if (actionId === "bulkManifest") {
+      await runBulkManifest();
+      return;
+    }
+
     if (!effectiveAppid) {
       pushToast("error", "Enter a valid Steam AppID or game name.");
       return;
@@ -183,7 +194,7 @@ export default function HomePage() {
       const response = await fetch(`/api/action/${actionId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ appid: effectiveAppid })
+        body: JSON.stringify({ appid: effectiveAppid, provider: manifestProvider })
       });
 
       if (!response.ok) {
@@ -216,6 +227,49 @@ export default function HomePage() {
       pushToast("error", error.message || "Unexpected error.");
     } finally {
       if (actionId === "downloadManifest" || actionId === "downloadLua") {
+        await loadViewer();
+      }
+      setBusyAction("");
+    }
+  }
+
+  async function runBulkManifest() {
+    setBusyAction("bulkManifest");
+    let successCount = 0;
+
+    try {
+      for (let index = 0; index < bulkCount; index += 1) {
+        const response = await fetch("/api/action/downloadRandomManifest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ provider: manifestProvider })
+        });
+
+        if (!response.ok) {
+          const fail = await response.json().catch(() => ({ error: "Bulk manifest failed." }));
+          throw new Error(fail.error || "Bulk manifest failed.");
+        }
+
+        const blob = await response.blob();
+        const contentDisposition = response.headers.get("content-disposition");
+        const fileName = parseFilename(contentDisposition) || `bulk-manifest-${index + 1}.zip`;
+
+        const href = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = href;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(href);
+        successCount += 1;
+      }
+
+      pushToast("success", `${successCount} random manifests downloaded via ${MANIFEST_PROVIDERS.find((item) => item.id === manifestProvider)?.label}.`);
+    } catch (error) {
+      pushToast("error", error.message || "Bulk manifest failed.");
+    } finally {
+      if (successCount > 0) {
         await loadViewer();
       }
       setBusyAction("");
@@ -289,6 +343,46 @@ export default function HomePage() {
             />
             <p className="st-helper">Use a numeric AppID or a game name. All requests go through the secure backend.</p>
 
+            <div className="st-provider-grid">
+              <div>
+                <label htmlFor="manifest-provider" className="st-field-label">
+                  Manifest provider
+                </label>
+                <select
+                  id="manifest-provider"
+                  className="st-appid-input"
+                  value={manifestProvider}
+                  onChange={(event) => setManifestProvider(event.target.value)}
+                >
+                  {MANIFEST_PROVIDERS.map((provider) => (
+                    <option key={provider.id} value={provider.id}>
+                      {provider.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="bulk-count" className="st-field-label">
+                  Bulk amount
+                </label>
+                <select
+                  id="bulk-count"
+                  className="st-appid-input"
+                  value={bulkCount}
+                  onChange={(event) => setBulkCount(Number(event.target.value))}
+                >
+                  {BULK_OPTIONS.map((count) => (
+                    <option key={count} value={count}>
+                      {count} random manifests
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <p className="st-helper">
+              Bulk Manifest downloads random manifest files via the currently selected provider. SteamTools API is the only provider available right now.
+            </p>
+
             {query.trim() ? (
               <div className="st-game-notice" aria-live="polite">
                 {gameLoading ? (
@@ -360,6 +454,29 @@ export default function HomePage() {
               );
             })}
           </div>
+        </section>
+
+        <section className="st-panel st-premium-ad">
+          <div>
+            <p className="st-kicker">Get Premium</p>
+            <h2>Unlock faster downloads and premium-only tools</h2>
+            <p className="st-helper">
+              Premium users get higher download limits, shorter cooldowns, and access to update actions.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="st-login-btn"
+            onClick={() => {
+              if (viewer?.premiumUrl) {
+                window.open(viewer.premiumUrl, "_blank", "noopener,noreferrer");
+                return;
+              }
+              pushToast("error", "Premium link not configured yet.");
+            }}
+          >
+            Get Premium
+          </button>
         </section>
 
         <footer className="st-kicker st-powered-by">powered by steamtools.app</footer>

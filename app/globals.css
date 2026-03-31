@@ -255,6 +255,13 @@ body {
   font-size: 0.92rem;
 }
 
+.st-provider-grid {
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
 .st-history {
   margin-top: 0.95rem;
 }
@@ -449,6 +456,23 @@ body {
   color: var(--st-muted);
   font-size: 0.86rem;
   text-align: center;
+}
+
+.st-premium-ad {
+  margin-top: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-color: color-mix(in srgb, var(--st-brand) 34%, var(--st-border));
+  background:
+    radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--st-brand) 16%, transparent), transparent 50%),
+    color-mix(in srgb, var(--st-brand) 7%, var(--st-panel-strong));
+}
+
+.st-premium-ad h2 {
+  margin: 0.12rem 0 0;
+  font-size: 1.15rem;
 }
 
 .st-toast-zone {
@@ -911,6 +935,10 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .st-provider-grid {
+    grid-template-columns: 1fr;
+  }
+
   .st-admin-metrics {
     grid-template-columns: 1fr;
   }
@@ -970,6 +998,11 @@ body {
 
   .st-actions-grid {
     grid-template-columns: 1fr;
+  }
+
+  .st-premium-ad {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .st-toast-zone {

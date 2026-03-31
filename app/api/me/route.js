@@ -43,7 +43,8 @@ export async function GET() {
       id: userId,
       name: session.user.name || "Discord User",
       image: session.user.image || "",
-      tag: session.user.tag || ""
+      tag: session.user.tag || "",
+      premiumUrl: process.env.DISCORD_PREMIUM_URL || ""
     },
     inGuild: membership.allowed,
     guildReason: membership.reason,

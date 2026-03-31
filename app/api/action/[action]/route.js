@@ -6,14 +6,46 @@ import { getHeaderImageUrl, getSteamGameMeta } from "../../../../lib/steam-meta"
 import { consumeDownloadQuota, getUsageForUser } from "../../../../lib/usage-store";
 import { recordDownloadEvent } from "../../../../lib/stats-store";
 
-const API_BASE = "https://generator.ryuu.lol";
+const PROVIDER_MAP = {
+  steamtools: {
+    label: "SteamTools API",
+    baseUrl: "https://generator.ryuu.lol",
+    endpoints: {
+      downloadManifest: "secure_download",
+      downloadRandomManifest: "secure_download",
+      downloadLua: "resellerlua",
+      requestUpdate: "resellerrequestupdate",
+      requestGame: "resellerrequest",
+      updateGame: "resellerupdate"
+    }
+  }
+};
+
+const RANDOM_MANIFEST_APPIDS = [
+  "570",
+  "730",
+  "440",
+  "550",
+  "271590",
+  "292030",
+  "1172470",
+  "1085660",
+  "381210",
+  "1091500",
+  "1245620",
+  "2050650",
+  "252490",
+  "359550",
+  "236390"
+];
 
 const ACTION_MAP = {
-  downloadManifest: { endpoint: "secure_download", isDownload: true, label: "Download Manifest" },
-  downloadLua: { endpoint: "resellerlua", isDownload: true, label: "Download Lua" },
-  requestUpdate: { endpoint: "resellerrequestupdate", isDownload: false, label: "Request Update" },
-  requestGame: { endpoint: "resellerrequest", isDownload: false, label: "Request Game" },
-  updateGame: { endpoint: "resellerupdate", isDownload: false, label: "Update Game" }
+  downloadManifest: { endpointKey: "downloadManifest", isDownload: true, label: "Download Manifest", requiresAppid: true },
+  downloadRandomManifest: { endpointKey: "downloadRandomManifest", isDownload: true, label: "Random Manifest", requiresAppid: false, randomManifest: true },
+  downloadLua: { endpointKey: "downloadLua", isDownload: true, label: "Download Lua", requiresAppid: true },
+  requestUpdate: { endpointKey: "requestUpdate", isDownload: false, label: "Request Update", requiresAppid: true },
+  requestGame: { endpointKey: "requestGame", isDownload: false, label: "Request Game", requiresAppid: true },
+  updateGame: { endpointKey: "updateGame", isDownload: false, label: "Update Game", requiresAppid: true }
 };
 
 function getClientIp(request) {
@@ -41,6 +73,18 @@ function getUpstreamUserMessage(status) {
 
 function getActionLabel(action) {
   return ACTION_MAP[action]?.label || action;
+}
+
+function getProvider(providerId) {
+  return PROVIDER_MAP[String(providerId || "steamtools").trim().toLowerCase()] || null;
+}
+
+function pickRandomAppid() {
+  return RANDOM_MANIFEST_APPIDS[Math.floor(Math.random() * RANDOM_MANIFEST_APPIDS.length)];
+}
+
+function isManifestLikeAction(action) {
+  return action === "downloadManifest" || action === "downloadRandomManifest";
 }
 
 function isSafeRedirectLocation(location) {
@@ -139,7 +183,7 @@ export async function POST(request, context) {
     );
   }
 
-  if (action === "downloadManifest" || action === "downloadLua") {
+  if (isManifestLikeAction(action) || action === "downloadLua") {
     const dailyLimit = isPremiumUser ? 500 : 50;
     const cooldownMs = isPremiumUser ? 2_000 : 10_000;
     const tier = isPremiumUser ? "premium" : "standard";
@@ -177,18 +221,6 @@ export async function POST(request, context) {
     }
   }
 
-  const apiKey = process.env.RYUU_API_KEY;
-  if (!apiKey) {
-    await sendDiscordLog({
-      title: "Server misconfiguration",
-      level: "error",
-      description: "Missing required server environment variable.",
-      session,
-      fields: [logField("Missing env", "RYUU_API_KEY", false)]
-    });
-    return json({ error: "Server misconfiguration: missing API key." }, 500);
-  }
-
   let payload;
   try {
     payload = await request.json();
@@ -204,24 +236,42 @@ export async function POST(request, context) {
     return json({ error: "Invalid JSON body." }, 400);
   }
 
-  const rawAppid = String(payload?.appid || "").trim();
-  if (!/^\d{1,10}$/.test(rawAppid)) {
+  const provider = getProvider(payload?.provider);
+  if (!provider) {
+    return json({ error: "Unsupported manifest provider." }, 400);
+  }
+
+  const apiKey = process.env.RYUU_API_KEY;
+  if (!apiKey) {
+    await sendDiscordLog({
+      title: "Server misconfiguration",
+      level: "error",
+      description: "Missing required server environment variable.",
+      session,
+      fields: [logField("Missing env", "RYUU_API_KEY", false)]
+    });
+    return json({ error: "Server misconfiguration: missing API key." }, 500);
+  }
+
+  const resolvedAppid = config.randomManifest ? pickRandomAppid() : String(payload?.appid || "").trim();
+  if (config.requiresAppid && !/^\d{1,10}$/.test(resolvedAppid)) {
     await sendDiscordLog({
       title: "Action failed: invalid appid",
       level: "warning",
       description: "Received malformed or empty AppID.",
       session,
       mentionUser: true,
-      fields: [logField("Action", actionLabel), logField("AppID", rawAppid || "empty")]
+      fields: [logField("Action", actionLabel), logField("AppID", resolvedAppid || "empty")]
     });
     return json({ error: "appid must be numeric (1-10 digits)." }, 400);
   }
 
-  const gameMeta = await getSteamGameMeta(rawAppid);
-  const gameImage = gameMeta.image || getHeaderImageUrl(rawAppid);
+  const gameMeta = await getSteamGameMeta(resolvedAppid);
+  const gameImage = gameMeta.image || getHeaderImageUrl(resolvedAppid);
 
-  const url = new URL(`${API_BASE}/${config.endpoint}`);
-  url.searchParams.set("appid", rawAppid);
+  const endpoint = provider.endpoints[config.endpointKey];
+  const url = new URL(`${provider.baseUrl}/${endpoint}`);
+  url.searchParams.set("appid", resolvedAppid);
   url.searchParams.set("auth_code", apiKey);
 
   let upstream;
@@ -239,7 +289,7 @@ export async function POST(request, context) {
       session,
       mentionUser: true,
       imageUrl: gameImage,
-      fields: [logField("Action", actionLabel), logField("AppID", rawAppid), logField("Game", gameMeta.name)]
+      fields: [logField("Action", actionLabel), logField("Provider", provider.label), logField("AppID", resolvedAppid), logField("Game", gameMeta.name)]
     });
     return json({ error: "Upstream service unreachable." }, 502);
   }
@@ -247,7 +297,7 @@ export async function POST(request, context) {
   if (config.isDownload && upstream.status >= 300 && upstream.status < 400) {
     const location = upstream.headers.get("location") || "";
     if (isSafeRedirectLocation(location)) {
-      if (action === "downloadManifest" || action === "downloadLua") {
+      if (isManifestLikeAction(action) || action === "downloadLua") {
         const dailyLimit = isPremiumUser ? 500 : 50;
         const cooldownMs = isPremiumUser ? 2_000 : 10_000;
         const resourceName = action === "downloadLua" ? "Lua" : "manifest";
@@ -270,8 +320,8 @@ export async function POST(request, context) {
 
       await recordDownloadEvent({
         userId: session.user.id,
-        actionId: action,
-        appid: rawAppid,
+        actionId: action === "downloadLua" ? "downloadLua" : "downloadManifest",
+        appid: resolvedAppid,
         gameName: gameMeta.name,
         tier: isPremiumUser ? "premium" : "standard"
       });
@@ -283,7 +333,7 @@ export async function POST(request, context) {
         session,
         mentionUser: true,
         imageUrl: gameImage,
-        fields: [logField("Action", actionLabel), logField("AppID", rawAppid), logField("Game", gameMeta.name)]
+        fields: [logField("Action", actionLabel), logField("Provider", provider.label), logField("AppID", resolvedAppid), logField("Game", gameMeta.name)]
       });
 
       return new Response(null, {
@@ -318,7 +368,8 @@ export async function POST(request, context) {
       imageUrl: gameImage,
       fields: [
         logField("Action", actionLabel),
-        logField("AppID", rawAppid),
+        logField("Provider", provider.label),
+        logField("AppID", resolvedAppid),
         logField("Game", gameMeta.name),
         logField("HTTP status", String(upstream.status)),
         logField("Detail", failText || "No detail", false)
@@ -334,7 +385,7 @@ export async function POST(request, context) {
   }
 
   if (config.isDownload) {
-    if (action === "downloadManifest" || action === "downloadLua") {
+    if (isManifestLikeAction(action) || action === "downloadLua") {
       const dailyLimit = isPremiumUser ? 500 : 50;
       const cooldownMs = isPremiumUser ? 2_000 : 10_000;
       const resourceName = action === "downloadLua" ? "Lua" : "manifest";
@@ -355,15 +406,15 @@ export async function POST(request, context) {
       }
     }
 
-    await recordDownloadEvent({
-      userId: session.user.id,
-      actionId: action,
-      appid: rawAppid,
-      gameName: gameMeta.name,
-      tier: isPremiumUser ? "premium" : "standard"
-    });
+      await recordDownloadEvent({
+        userId: session.user.id,
+        actionId: action === "downloadLua" ? "downloadLua" : "downloadManifest",
+        appid: resolvedAppid,
+        gameName: gameMeta.name,
+        tier: isPremiumUser ? "premium" : "standard"
+      });
 
-    const filename = `${action}-${rawAppid}`;
+    const filename = `${config.randomManifest ? "random-manifest" : action}-${resolvedAppid}`;
     await sendDiscordLog({
       title: "Action success",
       level: "success",
@@ -371,7 +422,7 @@ export async function POST(request, context) {
       session,
       mentionUser: true,
       imageUrl: gameImage,
-      fields: [logField("Action", actionLabel), logField("AppID", rawAppid), logField("Game", gameMeta.name)]
+      fields: [logField("Action", actionLabel), logField("Provider", provider.label), logField("AppID", resolvedAppid), logField("Game", gameMeta.name)]
     });
     return new Response(upstream.body, {
       status: 200,
@@ -402,24 +453,25 @@ export async function POST(request, context) {
   }
 
   await sendDiscordLog({
-    title: "Action success",
-    level: "success",
-    description: `> Request completed successfully.\n> Game: **${gameMeta.name}**`,
+      title: "Action success",
+      level: "success",
+      description: `> Request completed successfully.\n> Game: **${gameMeta.name}**`,
     session,
     mentionUser: true,
     imageUrl: gameImage,
-    fields: [
-      logField("Action", actionLabel),
-      logField("AppID", rawAppid),
-      logField("Game", gameMeta.name),
-      logField("Result", message, false)
-    ]
+      fields: [
+        logField("Action", actionLabel),
+        logField("Provider", provider.label),
+        logField("AppID", resolvedAppid),
+        logField("Game", gameMeta.name),
+        logField("Result", message, false)
+      ]
   });
 
   return json({
     success: true,
     action,
-    appid: rawAppid,
+    appid: resolvedAppid,
     message,
     upstream: parsedUpstream
   });
