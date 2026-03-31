@@ -436,6 +436,44 @@ body {
   background:
     radial-gradient(120% 120% at 100% 0%, color-mix(in srgb, var(--st-brand-2) 12%, transparent), transparent 48%),
     var(--st-panel-strong);
+  position: relative;
+  overflow: hidden;
+}
+
+.st-bulk-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.st-bulk-panel-locked {
+  border-color: color-mix(in srgb, #9ea4b8 28%, var(--st-border));
+  background:
+    linear-gradient(180deg, rgba(170, 176, 196, 0.05), rgba(170, 176, 196, 0.03)),
+    var(--st-panel-strong);
+}
+
+.st-bulk-panel-locked::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(122, 128, 146, 0.14);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.st-bulk-panel-locked::after {
+  content: "";
+  position: absolute;
+  inset: -18%;
+  background:
+    repeating-linear-gradient(
+      -58deg,
+      transparent 0 68px,
+      rgba(205, 210, 223, 0.22) 68px 74px,
+      transparent 74px 124px
+    );
+  pointer-events: none;
+  z-index: 0;
 }
 
 .st-bulk-head {
@@ -449,6 +487,13 @@ body {
 .st-bulk-head-locked h2,
 .st-bulk-head-locked .st-helper {
   color: color-mix(in srgb, var(--st-text) 72%, var(--st-muted));
+}
+
+.st-bulk-panel-locked .st-kicker,
+.st-bulk-panel-locked h2,
+.st-bulk-panel-locked .st-helper,
+.st-bulk-panel-locked .st-field-label {
+  color: color-mix(in srgb, var(--st-text) 70%, var(--st-muted));
 }
 
 .st-bulk-head h2 {
@@ -472,11 +517,12 @@ body {
 }
 
 .st-bulk-card-shell-locked {
-  opacity: 0.68;
-  filter: saturate(0.78);
+  opacity: 1;
+  filter: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0.01)),
-    color-mix(in srgb, var(--st-panel-strong) 92%, #2a2231);
+    color-mix(in srgb, var(--st-panel-strong) 94%, #383d49);
+  border-color: color-mix(in srgb, #8b92a7 26%, var(--st-border));
 }
 
 .st-bulk-simple {
@@ -515,6 +561,11 @@ body {
   width: 100%;
   min-height: 56px;
   align-self: stretch;
+}
+
+.st-bulk-panel-locked .st-bulk-btn,
+.st-bulk-panel-locked .st-bulk-select {
+  filter: grayscale(0.22);
 }
 
 .st-actions-head {

@@ -447,7 +447,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="st-panel st-bulk-panel">
+        <section className={`st-panel st-bulk-panel ${!isPremium ? "st-bulk-panel-locked" : ""}`}>
           <div className={`st-bulk-head ${!isPremium ? "st-bulk-head-locked" : ""}`}>
             <div>
               <p className="st-kicker">Bulk Manifest</p>
