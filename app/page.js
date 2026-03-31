@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 const ACTIONS = [
   { id: "downloadManifest", label: "Download Manifest", tone: "primary" },
-  { id: "bulkManifest", label: "Bulk Manifest", tone: "secondary" },
   { id: "downloadLua", label: "Download Lua", tone: "secondary" },
   { id: "requestUpdate", label: "Request Update", tone: "neutral" },
   { id: "requestGame", label: "Request Game", tone: "neutral" },
@@ -54,6 +53,7 @@ export default function HomePage() {
   const [resolvedAppid, setResolvedAppid] = useState("");
   const [manifestProvider, setManifestProvider] = useState("steamtools");
   const [bulkCount, setBulkCount] = useState(5);
+  const [showPremiumPopup, setShowPremiumPopup] = useState(false);
   const menuRef = useRef(null);
 
   const isAppidValid = useMemo(() => /^\d{1,10}$/.test(query), [query]);
@@ -61,6 +61,11 @@ export default function HomePage() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = "dark";
+  }, []);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setShowPremiumPopup(true), 450);
+    return () => window.clearTimeout(timeout);
   }, []);
 
   async function loadViewer({ redirectOnFail = false } = {}) {
@@ -343,46 +348,6 @@ export default function HomePage() {
             />
             <p className="st-helper">Use a numeric AppID or a game name. All requests go through the secure backend.</p>
 
-            <div className="st-provider-grid">
-              <div>
-                <label htmlFor="manifest-provider" className="st-field-label">
-                  Manifest provider
-                </label>
-                <select
-                  id="manifest-provider"
-                  className="st-appid-input"
-                  value={manifestProvider}
-                  onChange={(event) => setManifestProvider(event.target.value)}
-                >
-                  {MANIFEST_PROVIDERS.map((provider) => (
-                    <option key={provider.id} value={provider.id}>
-                      {provider.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="bulk-count" className="st-field-label">
-                  Bulk amount
-                </label>
-                <select
-                  id="bulk-count"
-                  className="st-appid-input"
-                  value={bulkCount}
-                  onChange={(event) => setBulkCount(Number(event.target.value))}
-                >
-                  {BULK_OPTIONS.map((count) => (
-                    <option key={count} value={count}>
-                      {count} random manifests
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <p className="st-helper">
-              Bulk Manifest downloads random manifest files via the currently selected provider. SteamTools API is the only provider available right now.
-            </p>
-
             {query.trim() ? (
               <div className="st-game-notice" aria-live="polite">
                 {gameLoading ? (
@@ -456,6 +421,64 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section className="st-panel st-bulk-panel">
+          <div className="st-bulk-head">
+            <div>
+              <p className="st-kicker">Bulk Manifest</p>
+              <h2>Download random manifests fast</h2>
+              <p className="st-helper">
+                Uses the current manifest provider and picks random AppIDs from the shared game list.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="st-action-btn st-secondary"
+              onClick={() => runAction("bulkManifest")}
+              disabled={Boolean(busyAction)}
+            >
+              {busyAction === "bulkManifest" ? "Processing..." : `Download ${bulkCount} random manifests`}
+            </button>
+          </div>
+          <div className="st-provider-grid">
+            <div className="st-bulk-card">
+              <label htmlFor="manifest-provider" className="st-field-label">
+                Manifest provider
+              </label>
+              <select
+                id="manifest-provider"
+                className="st-appid-input"
+                value={manifestProvider}
+                onChange={(event) => setManifestProvider(event.target.value)}
+              >
+                {MANIFEST_PROVIDERS.map((provider) => (
+                  <option key={provider.id} value={provider.id}>
+                    {provider.label}
+                  </option>
+                ))}
+              </select>
+              <p className="st-helper">Built for multiple sources later. SteamTools API is active right now.</p>
+            </div>
+            <div className="st-bulk-card">
+              <label htmlFor="bulk-count" className="st-field-label">
+                Bulk amount
+              </label>
+              <select
+                id="bulk-count"
+                className="st-appid-input"
+                value={bulkCount}
+                onChange={(event) => setBulkCount(Number(event.target.value))}
+              >
+                {BULK_OPTIONS.map((count) => (
+                  <option key={count} value={count}>
+                    {count} random manifests
+                  </option>
+                ))}
+              </select>
+              <p className="st-helper">Each file counts like a normal manifest download and respects your current quota.</p>
+            </div>
+          </div>
+        </section>
+
         <section className="st-panel st-premium-ad">
           <div>
             <p className="st-kicker">Get Premium</p>
@@ -489,6 +512,35 @@ export default function HomePage() {
           </div>
         ))}
       </aside>
+
+      {showPremiumPopup ? (
+        <div className="st-modal-backdrop" onClick={() => setShowPremiumPopup(false)}>
+          <div className="st-modal-card" onClick={(event) => event.stopPropagation()}>
+            <button type="button" className="st-modal-close" onClick={() => setShowPremiumPopup(false)}>
+              Close
+            </button>
+            <p className="st-kicker">Get Premium</p>
+            <h2>Unlock higher limits and premium-only tools</h2>
+            <p className="st-helper">
+              Premium gives you faster cooldowns, bigger daily download limits, and access to update features.
+            </p>
+            <button
+              type="button"
+              className="st-login-btn"
+              onClick={() => {
+                setShowPremiumPopup(false);
+                if (viewer?.premiumUrl) {
+                  window.open(viewer.premiumUrl, "_blank", "noopener,noreferrer");
+                  return;
+                }
+                pushToast("error", "Premium link not configured yet.");
+              }}
+            >
+              Get Premium
+            </button>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

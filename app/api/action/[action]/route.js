@@ -21,23 +21,11 @@ const PROVIDER_MAP = {
   }
 };
 
-const RANDOM_MANIFEST_APPIDS = [
-  "570",
-  "730",
-  "440",
-  "550",
-  "271590",
-  "292030",
-  "1172470",
-  "1085660",
-  "381210",
-  "1091500",
-  "1245620",
-  "2050650",
-  "252490",
-  "359550",
-  "236390"
-];
+const DEFAULT_GAME_LIST_URL = "https://raw.githubusercontent.com/SteamTools-Team/GameList/refs/heads/main/games.json";
+let manifestGameListCache = {
+  expiresAt: 0,
+  appids: []
+};
 
 const ACTION_MAP = {
   downloadManifest: { endpointKey: "downloadManifest", isDownload: true, label: "Download Manifest", requiresAppid: true },
@@ -79,8 +67,34 @@ function getProvider(providerId) {
   return PROVIDER_MAP[String(providerId || "steamtools").trim().toLowerCase()] || null;
 }
 
-function pickRandomAppid() {
-  return RANDOM_MANIFEST_APPIDS[Math.floor(Math.random() * RANDOM_MANIFEST_APPIDS.length)];
+async function getRandomManifestAppid() {
+  const now = Date.now();
+  if (manifestGameListCache.expiresAt > now && manifestGameListCache.appids.length > 0) {
+    return manifestGameListCache.appids[Math.floor(Math.random() * manifestGameListCache.appids.length)];
+  }
+
+  const sourceUrl = process.env.MANIFEST_RANDOM_LIST_URL || DEFAULT_GAME_LIST_URL;
+  const response = await fetch(sourceUrl, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error("Failed to load manifest game list.");
+  }
+
+  const payload = await response.json();
+  const items = Array.isArray(payload) ? payload : Array.isArray(payload?.value) ? payload.value : [];
+  const appids = items
+    .map((item) => String(item?.appid || "").trim())
+    .filter((appid) => /^\d{1,10}$/.test(appid));
+
+  if (appids.length === 0) {
+    throw new Error("Manifest game list is empty.");
+  }
+
+  manifestGameListCache = {
+    appids,
+    expiresAt: now + 10 * 60_000
+  };
+
+  return appids[Math.floor(Math.random() * appids.length)];
 }
 
 function isManifestLikeAction(action) {
@@ -253,7 +267,7 @@ export async function POST(request, context) {
     return json({ error: "Server misconfiguration: missing API key." }, 500);
   }
 
-  const resolvedAppid = config.randomManifest ? pickRandomAppid() : String(payload?.appid || "").trim();
+  const resolvedAppid = config.randomManifest ? await getRandomManifestAppid() : String(payload?.appid || "").trim();
   if (config.requiresAppid && !/^\d{1,10}$/.test(resolvedAppid)) {
     await sendDiscordLog({
       title: "Action failed: invalid appid",

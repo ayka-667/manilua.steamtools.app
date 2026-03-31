@@ -384,6 +384,34 @@ body {
   margin-top: 0.95rem;
 }
 
+.st-bulk-panel {
+  margin-top: 0.95rem;
+  border-color: color-mix(in srgb, var(--st-brand-2) 30%, var(--st-border));
+  background:
+    radial-gradient(120% 120% at 100% 0%, color-mix(in srgb, var(--st-brand-2) 12%, transparent), transparent 48%),
+    var(--st-panel-strong);
+}
+
+.st-bulk-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.st-bulk-head h2 {
+  margin: 0.12rem 0 0;
+  font-size: 1.1rem;
+}
+
+.st-bulk-card {
+  border: 1px solid var(--st-border);
+  border-radius: 14px;
+  padding: 0.9rem;
+  background: color-mix(in srgb, var(--st-brand) 6%, var(--st-panel-strong));
+}
+
 .st-actions-head {
   display: flex;
   align-items: center;
@@ -502,6 +530,46 @@ body {
 
 .st-error {
   border-left-color: var(--st-danger);
+}
+
+.st-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(3, 5, 14, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.st-modal-card {
+  width: min(480px, 100%);
+  border: 1px solid color-mix(in srgb, var(--st-brand) 25%, var(--st-border));
+  border-radius: 20px;
+  padding: 1.2rem;
+  background:
+    radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--st-brand) 14%, transparent), transparent 45%),
+    var(--st-panel);
+  box-shadow: var(--st-shadow);
+  position: relative;
+}
+
+.st-modal-card h2 {
+  margin: 0.12rem 0 0;
+  font-size: 1.3rem;
+}
+
+.st-modal-close {
+  position: absolute;
+  top: 0.8rem;
+  right: 0.8rem;
+  border: 1px solid var(--st-border);
+  background: transparent;
+  color: var(--st-text);
+  border-radius: 10px;
+  padding: 0.45rem 0.7rem;
+  cursor: pointer;
 }
 
 .st-login-page {
@@ -998,6 +1066,11 @@ body {
 
   .st-actions-grid {
     grid-template-columns: 1fr;
+  }
+
+  .st-bulk-head {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .st-premium-ad {
