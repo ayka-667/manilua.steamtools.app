@@ -272,7 +272,29 @@ body {
 
 .st-provider-card {
   width: 100%;
-  box-shadow: var(--st-shadow);
+  border-color: color-mix(in srgb, var(--st-brand) 26%, var(--st-border));
+  background:
+    radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--st-brand) 15%, transparent), transparent 52%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
+    color-mix(in srgb, var(--st-brand) 5%, var(--st-panel-strong));
+  box-shadow:
+    0 16px 30px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(14px);
+}
+
+.st-provider-card .st-field-label {
+  letter-spacing: 0.03em;
+}
+
+.st-provider-card .st-appid-input {
+  border-color: color-mix(in srgb, var(--st-brand) 24%, var(--st-border));
+  background: rgba(7, 9, 17, 0.18);
+}
+
+.st-provider-card .st-helper {
+  font-size: 0.85rem;
+  line-height: 1.35;
 }
 
 .st-provider-grid {
@@ -426,9 +448,7 @@ body {
 
 .st-bulk-head-locked h2,
 .st-bulk-head-locked .st-helper {
-  text-decoration: line-through;
-  text-decoration-thickness: 1px;
-  text-decoration-color: color-mix(in srgb, var(--st-danger) 55%, transparent);
+  color: color-mix(in srgb, var(--st-text) 72%, var(--st-muted));
 }
 
 .st-bulk-head h2 {
@@ -452,23 +472,11 @@ body {
 }
 
 .st-bulk-card-shell-locked {
-  opacity: 0.62;
-  filter: saturate(0.72);
-}
-
-.st-bulk-card-shell-locked::after {
-  content: "";
-  position: absolute;
-  inset: 14px;
-  background: linear-gradient(
-    -12deg,
-    transparent 46%,
-    rgba(255, 124, 152, 0.72) 48%,
-    rgba(255, 124, 152, 0.72) 52%,
-    transparent 54%
-  );
-  pointer-events: none;
-  border-radius: 10px;
+  opacity: 0.68;
+  filter: saturate(0.78);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0.01)),
+    color-mix(in srgb, var(--st-panel-strong) 92%, #2a2231);
 }
 
 .st-bulk-simple {
@@ -529,17 +537,17 @@ body {
 
 .st-actions-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.62rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.55rem;
 }
 
 .st-action-btn {
   border: 0;
   border-radius: 12px;
-  padding: 0.76rem 0.58rem;
+  padding: 0.72rem 0.48rem;
   color: #fff;
   font-weight: 700;
-  font-size: 0.86rem;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: transform 140ms ease, filter 140ms ease, opacity 140ms ease;
 }
