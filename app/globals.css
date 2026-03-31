@@ -446,9 +446,8 @@ body {
 }
 
 .st-bulk-panel-locked {
-  border-color: color-mix(in srgb, #9ea4b8 18%, var(--st-border));
-  background: rgba(110, 117, 140, 0.12);
-  opacity: 0.65;
+  pointer-events: none;
+  opacity: 0.55;
 }
 
 .st-bulk-panel-locked::before {
