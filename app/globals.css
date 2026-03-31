@@ -448,8 +448,14 @@ body {
 .st-bulk-panel-locked {
   border-color: color-mix(in srgb, #9ea4b8 28%, var(--st-border));
   background:
-    radial-gradient(120% 120% at 100% 0%, rgba(180, 186, 204, 0.08), transparent 42%),
-    linear-gradient(180deg, rgba(170, 176, 196, 0.05), rgba(170, 176, 196, 0.03)),
+    repeating-linear-gradient(
+      45deg,
+      rgba(150, 157, 175, 0.18),
+      rgba(150, 157, 175, 0.18) 15px,
+      rgba(140, 147, 165, 0.14) 15px,
+      rgba(140, 147, 165, 0.14) 30px
+    ),
+    linear-gradient(180deg, rgba(170, 176, 196, 0.1), rgba(170, 176, 196, 0.06)),
     var(--st-panel-strong);
 }
 
@@ -457,30 +463,27 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(122, 128, 146, 0.1);
+  background: rgba(115, 122, 140, 0.16);
   pointer-events: none;
   z-index: 0;
+  border-radius: inherit;
 }
 
 .st-bulk-panel-locked::after {
   content: "";
   position: absolute;
-  top: -18%;
-  right: 12%;
-  width: 120px;
-  height: 150%;
+  inset: 0;
   background:
-    linear-gradient(
-      -32deg,
-      transparent 0 36%,
-      rgba(215, 220, 232, 0.24) 36% 39%,
-      transparent 39% 61%,
-      rgba(215, 220, 232, 0.18) 61% 64%,
-      transparent 64% 100%
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2px,
+      rgba(165, 172, 188, 0.22) 2px,
+      rgba(165, 172, 188, 0.22) 4px
     );
   pointer-events: none;
-  z-index: 0;
-  opacity: 0.9;
+  z-index: 1;
+  border-radius: inherit;
 }
 
 .st-bulk-head {
