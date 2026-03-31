@@ -423,71 +423,67 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="st-tools-grid">
-          <section className="st-panel st-actions-panel">
-            <div className="st-actions-head">
-              <h2>Available actions</h2>
-              <span>{busyAction ? "Request in progress..." : isPremium ? "Premium active" : "Premium inactive"}</span>
-            </div>
-            <div className="st-actions-grid">
-              {ACTIONS.map((action) => {
-                const isLocked = PREMIUM_ACTIONS.has(action.id) && !isPremium;
-                return (
-                  <button
-                    key={action.id}
-                    className={`st-action-btn st-${action.tone} ${isLocked ? "st-locked" : ""}`}
-                    type="button"
-                    onClick={() => runAction(action.id)}
-                    disabled={Boolean(busyAction) || isLocked}
-                  >
-                    {getActionLabel(action, isLocked)}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="st-panel st-bulk-panel">
-            <div className="st-bulk-head">
-              <div>
-                <p className="st-kicker">Bulk Manifest</p>
-                <h2>Download random manifests fast</h2>
-              </div>
-            </div>
-            <div className="st-bulk-layout">
-              <div className="st-tool-card">
-                <label htmlFor="bulk-count" className="st-field-label">
-                  Bulk amount
-                </label>
-                <select
-                  id="bulk-count"
-                  className="st-appid-input"
-                  value={bulkCount}
-                  onChange={(event) => setBulkCount(Number(event.target.value))}
-                >
-                  {BULK_OPTIONS.map((count) => (
-                    <option key={count} value={count}>
-                      {count} random manifests
-                    </option>
-                  ))}
-                </select>
-                <p className="st-helper">Each file counts like a normal manifest download and respects your current quota.</p>
-              </div>
-              <div className="st-bulk-summary">
-                <p className="st-helper">
-                  Picks random AppIDs from the shared game list and downloads them through the provider selected above.
-                </p>
+        <section className="st-panel st-actions-panel">
+          <div className="st-actions-head">
+            <h2>Available actions</h2>
+            <span>{busyAction ? "Request in progress..." : isPremium ? "Premium active" : "Premium inactive"}</span>
+          </div>
+          <div className="st-actions-grid">
+            {ACTIONS.map((action) => {
+              const isLocked = PREMIUM_ACTIONS.has(action.id) && !isPremium;
+              return (
                 <button
+                  key={action.id}
+                  className={`st-action-btn st-${action.tone} ${isLocked ? "st-locked" : ""}`}
                   type="button"
-                  className="st-action-btn st-secondary st-bulk-btn"
-                  onClick={() => runAction("bulkManifest")}
-                  disabled={Boolean(busyAction)}
+                  onClick={() => runAction(action.id)}
+                  disabled={Boolean(busyAction) || isLocked}
                 >
-                  {busyAction === "bulkManifest" ? "Processing..." : `Download ${bulkCount} random manifests`}
+                  {getActionLabel(action, isLocked)}
                 </button>
-              </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="st-panel st-bulk-panel">
+          <div className="st-bulk-head">
+            <div>
+              <p className="st-kicker">Bulk Manifest</p>
+              <h2>Download random manifests fast</h2>
+              <p className="st-helper">
+                Picks random AppIDs from the shared game list and downloads them through the provider selected above.
+              </p>
             </div>
-          </section>
+          </div>
+          <div className="st-bulk-controls">
+            <div className="st-tool-card">
+              <label htmlFor="bulk-count" className="st-field-label">
+                Bulk amount
+              </label>
+              <select
+                id="bulk-count"
+                className="st-appid-input"
+                value={bulkCount}
+                onChange={(event) => setBulkCount(Number(event.target.value))}
+              >
+                {BULK_OPTIONS.map((count) => (
+                  <option key={count} value={count}>
+                    {count} random manifests
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              className="st-action-btn st-secondary st-bulk-btn"
+              onClick={() => runAction("bulkManifest")}
+              disabled={Boolean(busyAction)}
+            >
+              {busyAction === "bulkManifest" ? "Processing..." : `Download ${bulkCount} random manifests`}
+            </button>
+          </div>
+          <p className="st-helper">Each file counts like a normal manifest download and respects your current quota.</p>
         </section>
 
         <footer className="st-kicker st-powered-by">powered by steamtools.app</footer>
