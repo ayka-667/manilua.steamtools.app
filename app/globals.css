@@ -85,6 +85,14 @@ body {
   text-align: center;
 }
 
+.st-provider-floating {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 135;
+  width: min(300px, calc(100vw - 2rem));
+}
+
 .st-profile {
   position: fixed;
   top: 1rem;
@@ -262,15 +270,9 @@ body {
   background: color-mix(in srgb, var(--st-brand) 6%, var(--st-panel-strong));
 }
 
-.st-provider-row {
-  margin-bottom: 1rem;
-  display: flex;
-  justify-content: flex-start;
-  width: 100%;
-}
-
 .st-provider-card {
-  width: min(280px, 100%);
+  width: 100%;
+  box-shadow: var(--st-shadow);
 }
 
 .st-provider-grid {
@@ -422,6 +424,13 @@ body {
   margin-bottom: 0.9rem;
 }
 
+.st-bulk-head-locked h2,
+.st-bulk-head-locked .st-helper {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, var(--st-danger) 55%, transparent);
+}
+
 .st-bulk-head h2 {
   margin: 0.12rem 0 0;
   font-size: 1.1rem;
@@ -434,16 +443,44 @@ body {
   background: color-mix(in srgb, var(--st-brand) 6%, var(--st-panel-strong));
 }
 
+.st-bulk-card-shell {
+  border: 1px solid var(--st-border);
+  border-radius: 16px;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--st-brand) 5%, var(--st-panel-strong));
+  position: relative;
+}
+
+.st-bulk-card-shell-locked {
+  opacity: 0.62;
+  filter: saturate(0.72);
+}
+
+.st-bulk-card-shell-locked::after {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  background: linear-gradient(
+    -12deg,
+    transparent 46%,
+    rgba(255, 124, 152, 0.72) 48%,
+    rgba(255, 124, 152, 0.72) 52%,
+    transparent 54%
+  );
+  pointer-events: none;
+  border-radius: 10px;
+}
+
 .st-bulk-simple {
   display: grid;
-  grid-template-columns: auto minmax(220px, 280px) minmax(260px, 1fr);
+  grid-template-columns: minmax(0, 280px) minmax(260px, 1fr);
   gap: 0.85rem;
   align-items: end;
 }
 
-.st-bulk-label {
-  margin-bottom: 0;
-  white-space: nowrap;
+.st-bulk-simple-field {
+  display: grid;
+  gap: 0.45rem;
 }
 
 .st-bulk-select {
@@ -1123,6 +1160,13 @@ body {
   .st-profile {
     top: 0.6rem;
     right: 0.6rem;
+  }
+
+  .st-provider-floating {
+    left: 0.6rem;
+    right: 0.6rem;
+    bottom: 0.6rem;
+    width: auto;
   }
 
   .st-game-notice {
