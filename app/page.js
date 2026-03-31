@@ -246,33 +246,54 @@ export default function HomePage() {
 
     setBusyAction("bulkManifest");
     let successCount = 0;
+    const COOLDOWN_MS = 2_000;
 
     try {
       for (let index = 0; index < bulkCount; index += 1) {
-        const response = await fetch("/api/action/downloadRandomManifest", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ provider: manifestProvider })
-        });
+        let retrying = true;
+        let retryCount = 0;
+        
+        while (retrying) {
+          const response = await fetch("/api/action/downloadRandomManifest", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ provider: manifestProvider })
+          });
 
-        if (!response.ok) {
-          const fail = await response.json().catch(() => ({ error: "Bulk manifest failed." }));
-          throw new Error(fail.error || "Bulk manifest failed.");
+          if (response.status === 429) {
+            const retryAfterSec = parseInt(response.headers.get("retry-after") || "2", 10);
+            retryCount += 1;
+            if (retryCount > 5) {
+              throw new Error("Max retry attempts reached due to cooldown.");
+            }
+            await new Promise((resolve) => setTimeout(resolve, retryAfterSec * 1000));
+            continue;
+          }
+
+          if (!response.ok) {
+            const fail = await response.json().catch(() => ({ error: "Bulk manifest failed." }));
+            throw new Error(fail.error || "Bulk manifest failed.");
+          }
+
+          const blob = await response.blob();
+          const contentDisposition = response.headers.get("content-disposition");
+          const fileName = parseFilename(contentDisposition) || `bulk-manifest-${index + 1}.zip`;
+
+          const href = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = href;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(href);
+          successCount += 1;
+          retrying = false;
+          
+          if (index < bulkCount - 1) {
+            await new Promise((resolve) => setTimeout(resolve, COOLDOWN_MS));
+          }
         }
-
-        const blob = await response.blob();
-        const contentDisposition = response.headers.get("content-disposition");
-        const fileName = parseFilename(contentDisposition) || `bulk-manifest-${index + 1}.zip`;
-
-        const href = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = href;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(href);
-        successCount += 1;
       }
 
       pushToast("success", `${successCount} random manifests downloaded via ${MANIFEST_PROVIDERS.find((item) => item.id === manifestProvider)?.label}.`);
