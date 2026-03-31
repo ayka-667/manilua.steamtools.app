@@ -239,6 +239,11 @@ export default function HomePage() {
   }
 
   async function runBulkManifest() {
+    if (!isPremium) {
+      pushToast("error", "Buy the premium Discord role to use Bulk Manifest.");
+      return;
+    }
+
     setBusyAction("bulkManifest");
     let successCount = 0;
 
@@ -335,23 +340,21 @@ export default function HomePage() {
 
         <section className="st-main-grid">
           <div className="st-panel st-input-panel">
-            <div className="st-input-top-grid">
-              <div>
-                <label htmlFor="appid" className="st-field-label">
-                  Steam AppID or game name
-                </label>
-                <input
-                  id="appid"
-                  className="st-appid-input"
-                  type="text"
-                  value={query}
-                  placeholder="Example: 570 or Elden Ring"
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-                <p className="st-helper">Use a numeric AppID or a game name. All requests go through the secure backend.</p>
-              </div>
+            <label htmlFor="appid" className="st-field-label">
+              Steam AppID or game name
+            </label>
+            <input
+              id="appid"
+              className="st-appid-input"
+              type="text"
+              value={query}
+              placeholder="Example: 570 or Elden Ring"
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            <p className="st-helper">Use a numeric AppID or a game name. All requests go through the secure backend.</p>
 
-              <div className="st-tool-card">
+            <div className="st-provider-corner">
+              <div className="st-tool-card st-provider-card">
                 <label htmlFor="manifest-provider" className="st-field-label">
                   Manifest provider
                 </label>
@@ -367,9 +370,6 @@ export default function HomePage() {
                     </option>
                   ))}
                 </select>
-                <p className="st-helper">
-                  This provider is used for the main manifest download and for Bulk Manifest. SteamTools API is the active source right now.
-                </p>
               </div>
             </div>
 
@@ -452,9 +452,12 @@ export default function HomePage() {
               <p className="st-kicker">Bulk Manifest</p>
               <h2>Download random manifests fast</h2>
               <p className="st-helper">
-                Picks random AppIDs from the shared game list and downloads them through the provider selected above.
+                Picks random AppIDs from the shared game list and downloads them through the provider selected below.
               </p>
             </div>
+            <span className={`st-bulk-badge ${isPremium ? "st-bulk-badge-active" : ""}`}>
+              {isPremium ? "Premium active" : "Premium only"}
+            </span>
           </div>
           <div className="st-bulk-controls">
             <div className="st-tool-card">
@@ -476,9 +479,9 @@ export default function HomePage() {
             </div>
             <button
               type="button"
-              className="st-action-btn st-secondary st-bulk-btn"
+              className={`st-action-btn st-secondary st-bulk-btn ${!isPremium ? "st-locked" : ""}`}
               onClick={() => runAction("bulkManifest")}
-              disabled={Boolean(busyAction)}
+              disabled={Boolean(busyAction) || !isPremium}
             >
               {busyAction === "bulkManifest" ? "Processing..." : `Download ${bulkCount} random manifests`}
             </button>
