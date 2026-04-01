@@ -729,6 +729,12 @@ body {
   z-index: 1;
 }
 
+.st-modal-close:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.2);
+}
+
 .st-login-page {
   display: grid;
   place-items: center;

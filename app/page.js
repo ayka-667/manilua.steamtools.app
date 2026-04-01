@@ -13,9 +13,15 @@ const ACTIONS = [
 
 const MANIFEST_PROVIDERS = [
   { id: "ryuu", label: "Ryuu" },
-  { id: "depotbox", label: "DepotBox" }
+  { id: "depotbox", label: "DepotBox" },
+  { id: "manifesthub", label: "ManifestHub" }
 ];
 const BULK_OPTIONS = [3, 5, 10];
+const PROVIDER_ACTION_SUPPORT = {
+  ryuu: new Set([...ACTIONS.map((action) => action.id), "downloadRandomManifest"]),
+  depotbox: new Set(["downloadManifest", "downloadRandomManifest"]),
+  manifesthub: new Set(["downloadManifest"])
+};
 
 const HISTORY_KEY = "steamtools_recent_appids";
 const PREMIUM_ACTIONS = new Set(["requestUpdate", "updateGame"]);
@@ -41,6 +47,16 @@ function getMessage(data) {
   return "Action completed.";
 }
 
+function getProviderHelperText(providerId) {
+  if (providerId === "manifesthub") {
+    return "Checks GitHub branches and downloads the matching manifest zip. Configure the repo URL in .env.";
+  }
+  if (providerId === "depotbox") {
+    return "Used for standard manifest downloads and Bulk Manifest.";
+  }
+  return "Used for manifests, Lua generation, requests, and Bulk Manifest.";
+}
+
 export default function HomePage() {
   const [query, setQuery] = useState("");
   const [busyAction, setBusyAction] = useState("");
@@ -57,10 +73,12 @@ export default function HomePage() {
   const [manifestProvider, setManifestProvider] = useState("ryuu");
   const [bulkCount, setBulkCount] = useState(5);
   const [showPremiumPopup, setShowPremiumPopup] = useState(false);
+  const [premiumPopupCountdown, setPremiumPopupCountdown] = useState(0);
   const menuRef = useRef(null);
 
   const isAppidValid = useMemo(() => /^\d{1,10}$/.test(query), [query]);
   const effectiveAppid = isAppidValid ? query : resolvedAppid;
+  const canRunBulkManifest = PROVIDER_ACTION_SUPPORT[manifestProvider]?.has("downloadRandomManifest");
 
   useEffect(() => {
     document.documentElement.dataset.theme = "dark";
@@ -70,6 +88,26 @@ export default function HomePage() {
     const timeout = window.setTimeout(() => setShowPremiumPopup(true), 450);
     return () => window.clearTimeout(timeout);
   }, []);
+
+  useEffect(() => {
+    if (!showPremiumPopup) {
+      setPremiumPopupCountdown(0);
+      return;
+    }
+
+    setPremiumPopupCountdown(3);
+    const intervalId = window.setInterval(() => {
+      setPremiumPopupCountdown((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(intervalId);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [showPremiumPopup]);
 
   async function loadViewer({ redirectOnFail = false } = {}) {
     try {
@@ -187,6 +225,11 @@ export default function HomePage() {
       return;
     }
 
+    if (!PROVIDER_ACTION_SUPPORT[manifestProvider]?.has(actionId)) {
+      pushToast("error", "This action is not available with the selected manifest provider.");
+      return;
+    }
+
     if (!effectiveAppid) {
       pushToast("error", "Enter a valid Steam AppID or game name.");
       return;
@@ -244,6 +287,10 @@ export default function HomePage() {
   async function runBulkManifest() {
     if (!isPremium) {
       pushToast("error", "Buy the premium Discord role to use Bulk Manifest.");
+      return;
+    }
+    if (!canRunBulkManifest) {
+      pushToast("error", "Bulk Manifest is not available with the selected manifest provider.");
       return;
     }
 
@@ -313,6 +360,7 @@ export default function HomePage() {
   function getActionLabel(action, isLocked) {
     if (busyAction === action.id) return "Processing...";
     if (isLocked) return `${action.label} (Premium)`;
+    if (!PROVIDER_ACTION_SUPPORT[manifestProvider]?.has(action.id)) return `${action.label} (Unavailable)`;
     return action.label;
   }
 
@@ -371,7 +419,7 @@ export default function HomePage() {
               </option>
             ))}
           </select>
-          <p className="st-helper">Used for normal manifest downloads and for Bulk Manifest.</p>
+          <p className="st-helper">{getProviderHelperText(manifestProvider)}</p>
         </div>
       </aside>
 
@@ -456,13 +504,14 @@ export default function HomePage() {
           <div className="st-actions-grid">
             {ACTIONS.map((action) => {
               const isLocked = PREMIUM_ACTIONS.has(action.id) && !isPremium;
+              const isUnavailable = !PROVIDER_ACTION_SUPPORT[manifestProvider]?.has(action.id);
               return (
                 <button
                   key={action.id}
-                  className={`st-action-btn st-${action.tone} ${isLocked ? "st-locked" : ""}`}
+                  className={`st-action-btn st-${action.tone} ${isLocked || isUnavailable ? "st-locked" : ""}`}
                   type="button"
                   onClick={() => runAction(action.id)}
-                  disabled={Boolean(busyAction) || isLocked}
+                  disabled={Boolean(busyAction) || isLocked || isUnavailable}
                 >
                   {getActionLabel(action, isLocked)}
                 </button>
@@ -506,14 +555,18 @@ export default function HomePage() {
               </div>
               <button
                 type="button"
-                className={`st-action-btn st-secondary st-bulk-btn ${!isPremium ? "st-locked" : ""}`}
+                className={`st-action-btn st-secondary st-bulk-btn ${!isPremium || !canRunBulkManifest ? "st-locked" : ""}`}
                 onClick={() => runAction("bulkManifest")}
-                disabled={Boolean(busyAction) || !isPremium}
+                disabled={Boolean(busyAction) || !isPremium || !canRunBulkManifest}
               >
                 {busyAction === "bulkManifest" ? "Processing..." : `Download ${bulkCount} random manifests`}
               </button>
             </div>
-            <p className="st-helper">Each file counts like a normal manifest download and respects your current quota.</p>
+            <p className="st-helper">
+              {canRunBulkManifest
+                ? "Each file counts like a normal manifest download and respects your current quota."
+                : "The selected provider only supports direct manifest downloads by AppID."}
+            </p>
           </div>
         </section>
 
@@ -529,12 +582,24 @@ export default function HomePage() {
       </aside>
 
       {showPremiumPopup ? (
-        <div className="st-modal-backdrop" onClick={() => setShowPremiumPopup(false)}>
+        <div
+          className="st-modal-backdrop"
+          onClick={() => {
+            if (premiumPopupCountdown === 0) {
+              setShowPremiumPopup(false);
+            }
+          }}
+        >
           <div className="st-modal-card" onClick={(event) => event.stopPropagation()}>
             <div className="st-modal-top">
               <span className="st-kicker">Get Premium</span>
-              <button type="button" className="st-modal-close" onClick={() => setShowPremiumPopup(false)}>
-                Close
+              <button
+                type="button"
+                className="st-modal-close"
+                onClick={() => setShowPremiumPopup(false)}
+                disabled={premiumPopupCountdown > 0}
+              >
+                {premiumPopupCountdown > 0 ? `Close (${premiumPopupCountdown}s)` : "Close"}
               </button>
             </div>
             <h2>Unlock higher limits and premium-only tools</h2>

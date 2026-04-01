@@ -28,6 +28,12 @@ const PROVIDER_MAP = {
       downloadManifest: "api/download",
       downloadRandomManifest: "api/download"
     }
+  },
+  manifesthub: {
+    label: "ManifestHub",
+    providerType: "github-branches",
+    repoUrlEnv: "MANIFESTHUB_REPO_URL",
+    repoUrlDefault: "https://github.com/SteamAutoCracks/ManifestHub"
   }
 };
 
@@ -183,6 +189,97 @@ async function fetchDepotBoxDownload(provider, apiKey, appid) {
     ok: false,
     status: 504,
     detail: "DepotBox download timed out while processing."
+  };
+}
+
+function getManifestHubRepoPath(provider) {
+  const rawUrl = String(process.env[provider.repoUrlEnv] || provider.repoUrlDefault || "").trim();
+  if (!rawUrl) {
+    return {
+      ok: false,
+      detail: `Missing ${provider.repoUrlEnv}.`
+    };
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return {
+      ok: false,
+      detail: `${provider.repoUrlEnv} must be a valid GitHub repository URL.`
+    };
+  }
+
+  const parts = parsed.pathname.split("/").filter(Boolean);
+  if (parsed.hostname === "api.github.com" && parts[0] === "repos" && parts.length >= 3) {
+    return { ok: true, repoPath: `${parts[1]}/${parts[2]}` };
+  }
+
+  if ((parsed.hostname === "github.com" || parsed.hostname === "www.github.com") && parts.length >= 2) {
+    return { ok: true, repoPath: `${parts[0]}/${parts[1]}` };
+  }
+
+  return {
+    ok: false,
+    detail: `${provider.repoUrlEnv} must target a GitHub repo like https://github.com/owner/repo or https://api.github.com/repos/owner/repo.`
+  };
+}
+
+async function fetchManifestHubDownload(provider, appid) {
+  const repo = getManifestHubRepoPath(provider);
+  if (!repo.ok) {
+    return {
+      ok: false,
+      status: 500,
+      detail: repo.detail
+    };
+  }
+
+  const checkUrl = `https://api.github.com/repos/${repo.repoPath}/branches/${appid}`;
+  const checkResponse = await fetch(checkUrl, {
+    method: "GET",
+    cache: "no-store",
+    headers: {
+      accept: "application/vnd.github+json"
+    }
+  });
+
+  if (checkResponse.status === 404) {
+    return {
+      ok: false,
+      status: 404,
+      detail: "Manifest not found for this AppID."
+    };
+  }
+
+  if (!checkResponse.ok) {
+    const failText = await checkResponse.text().catch(() => "");
+    return {
+      ok: false,
+      status: checkResponse.status,
+      detail: failText || "GitHub branch check failed."
+    };
+  }
+
+  const downloadUrl = `https://codeload.github.com/${repo.repoPath}/zip/refs/heads/${appid}`;
+  const downloadResponse = await fetch(downloadUrl, {
+    method: "GET",
+    cache: "no-store"
+  });
+
+  if (!downloadResponse.ok) {
+    const failText = await downloadResponse.text().catch(() => "");
+    return {
+      ok: false,
+      status: downloadResponse.status,
+      detail: failText || "GitHub download failed."
+    };
+  }
+
+  return {
+    ok: true,
+    response: downloadResponse
   };
 }
 
@@ -374,8 +471,8 @@ export async function POST(request, context) {
     return json({ error: "Unsupported manifest provider." }, 400);
   }
 
-  const apiKey = process.env[provider.apiKeyEnv || "RYUU_API_KEY"];
-  if (!apiKey) {
+  const apiKey = provider.apiKeyEnv ? process.env[provider.apiKeyEnv] : "";
+  if (provider.apiKeyEnv && !apiKey) {
     await sendDiscordLog({
       title: "Server misconfiguration",
       level: "error",
@@ -412,6 +509,15 @@ export async function POST(request, context) {
         });
       } else {
         upstream = depotBoxResult.response;
+      }
+    } else if (provider.providerType === "github-branches" && isManifestLikeAction(action)) {
+      const manifestHubResult = await fetchManifestHubDownload(provider, resolvedAppid);
+      if (!manifestHubResult.ok) {
+        upstream = new Response(manifestHubResult.detail || "ManifestHub request failed.", {
+          status: manifestHubResult.status || 502
+        });
+      } else {
+        upstream = manifestHubResult.response;
       }
     } else {
       const endpoint = provider.endpoints[config.endpointKey];
