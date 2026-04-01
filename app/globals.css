@@ -373,7 +373,7 @@ body {
 
 .st-provider-dropdown {
   position: absolute;
-  top: calc(100% + 0.45rem);
+  bottom: calc(100% + 0.45rem);
   left: 0;
   right: 0;
   z-index: 30;
@@ -386,7 +386,7 @@ body {
     linear-gradient(180deg, rgba(20, 24, 38, 0.98), rgba(11, 14, 24, 0.98)),
     var(--st-panel);
   box-shadow:
-    0 18px 40px rgba(0, 0, 0, 0.42),
+    0 -18px 40px rgba(0, 0, 0, 0.42),
     0 0 0 1px rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(16px);
 }
