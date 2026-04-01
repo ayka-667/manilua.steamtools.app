@@ -259,21 +259,14 @@ body {
   cursor: pointer;
   padding-right: 3.2rem;
   background-image:
-    linear-gradient(45deg, transparent 50%, color-mix(in srgb, var(--st-brand) 72%, white) 50%),
-    linear-gradient(135deg, color-mix(in srgb, var(--st-brand) 72%, white) 50%, transparent 50%),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--st-brand) 12%, rgba(255, 255, 255, 0.03)),
-      color-mix(in srgb, var(--st-brand) 4%, rgba(255, 255, 255, 0.01))
-    );
+    linear-gradient(45deg, transparent 50%, color-mix(in srgb, var(--st-muted) 72%, var(--st-text)) 50%),
+    linear-gradient(135deg, color-mix(in srgb, var(--st-muted) 72%, var(--st-text)) 50%, transparent 50%);
   background-position:
     calc(100% - 1.25rem) calc(50% + 0.05rem),
-    calc(100% - 0.8rem) calc(50% + 0.05rem),
-    0 0;
+    calc(100% - 0.8rem) calc(50% + 0.05rem);
   background-size:
     0.5rem 0.5rem,
-    0.5rem 0.5rem,
-    100% 100%;
+    0.5rem 0.5rem;
   background-repeat: no-repeat;
 }
 
@@ -327,10 +320,10 @@ body {
 }
 
 .st-provider-card .st-select-input {
+  background-color: rgba(7, 9, 17, 0.32);
   background-image:
-    linear-gradient(45deg, transparent 50%, color-mix(in srgb, white 86%, var(--st-brand)) 50%),
-    linear-gradient(135deg, color-mix(in srgb, white 86%, var(--st-brand)) 50%, transparent 50%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    linear-gradient(45deg, transparent 50%, color-mix(in srgb, var(--st-text) 78%, var(--st-brand)) 50%),
+    linear-gradient(135deg, color-mix(in srgb, var(--st-text) 78%, var(--st-brand)) 50%, transparent 50%);
 }
 
 .st-provider-card .st-helper {
