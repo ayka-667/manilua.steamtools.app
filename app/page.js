@@ -69,16 +69,19 @@ export default function HomePage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [usage, setUsage] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [providerMenuOpen, setProviderMenuOpen] = useState(false);
   const [resolvedAppid, setResolvedAppid] = useState("");
   const [manifestProvider, setManifestProvider] = useState("ryuu");
   const [bulkCount, setBulkCount] = useState(5);
   const [showPremiumPopup, setShowPremiumPopup] = useState(false);
   const [premiumPopupCountdown, setPremiumPopupCountdown] = useState(0);
   const menuRef = useRef(null);
+  const providerMenuRef = useRef(null);
 
   const isAppidValid = useMemo(() => /^\d{1,10}$/.test(query), [query]);
   const effectiveAppid = isAppidValid ? query : resolvedAppid;
   const canRunBulkManifest = PROVIDER_ACTION_SUPPORT[manifestProvider]?.has("downloadRandomManifest");
+  const selectedProvider = MANIFEST_PROVIDERS.find((provider) => provider.id === manifestProvider) || MANIFEST_PROVIDERS[0];
 
   useEffect(() => {
     document.documentElement.dataset.theme = "dark";
@@ -157,9 +160,11 @@ export default function HomePage() {
 
   useEffect(() => {
     function onGlobalClick(event) {
-      if (!menuRef.current) return;
-      if (!menuRef.current.contains(event.target)) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
         setMenuOpen(false);
+      }
+      if (providerMenuRef.current && !providerMenuRef.current.contains(event.target)) {
+        setProviderMenuOpen(false);
       }
     }
     document.addEventListener("click", onGlobalClick);
@@ -407,18 +412,38 @@ export default function HomePage() {
           <label htmlFor="manifest-provider" className="st-field-label">
             Manifest provider
           </label>
-          <select
-            id="manifest-provider"
-            className="st-appid-input st-select-input"
-            value={manifestProvider}
-            onChange={(event) => setManifestProvider(event.target.value)}
-          >
-            {MANIFEST_PROVIDERS.map((provider) => (
-              <option key={provider.id} value={provider.id}>
-                {provider.label}
-              </option>
-            ))}
-          </select>
+          <div className="st-provider-select" ref={providerMenuRef}>
+            <button
+              id="manifest-provider"
+              type="button"
+              className={`st-provider-trigger ${providerMenuOpen ? "is-open" : ""}`}
+              onClick={() => setProviderMenuOpen((prev) => !prev)}
+              aria-haspopup="listbox"
+              aria-expanded={providerMenuOpen}
+            >
+              <span>{selectedProvider.label}</span>
+              <span className="st-provider-trigger-icon" aria-hidden="true" />
+            </button>
+            {providerMenuOpen ? (
+              <div className="st-provider-dropdown" role="listbox" aria-labelledby="manifest-provider">
+                {MANIFEST_PROVIDERS.map((provider) => (
+                  <button
+                    key={provider.id}
+                    type="button"
+                    className={`st-provider-option ${provider.id === manifestProvider ? "is-active" : ""}`}
+                    onClick={() => {
+                      setManifestProvider(provider.id);
+                      setProviderMenuOpen(false);
+                    }}
+                    role="option"
+                    aria-selected={provider.id === manifestProvider}
+                  >
+                    {provider.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <p className="st-helper">{getProviderHelperText(manifestProvider)}</p>
         </div>
       </aside>
