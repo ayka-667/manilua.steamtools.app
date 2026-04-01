@@ -7,9 +7,10 @@ import { consumeDownloadQuota, getUsageForUser } from "../../../../lib/usage-sto
 import { recordDownloadEvent } from "../../../../lib/stats-store";
 
 const PROVIDER_MAP = {
-  steamtools: {
-    label: "SteamTools API",
+  ryuu: {
+    label: "Ryuu",
     baseUrl: "https://generator.ryuu.lol",
+    apiKeyEnv: "RYUU_API_KEY",
     endpoints: {
       downloadManifest: "secure_download",
       downloadRandomManifest: "secure_download",
@@ -17,6 +18,15 @@ const PROVIDER_MAP = {
       requestUpdate: "resellerrequestupdate",
       requestGame: "resellerrequest",
       updateGame: "resellerupdate"
+    }
+  },
+  depotbox: {
+    label: "DepotBox",
+    baseUrl: process.env.DEPOTBOX_BASE_URL || "https://depotbox.org",
+    apiKeyEnv: "DEPOTBOX_API_KEY",
+    endpoints: {
+      downloadManifest: "api/download",
+      downloadRandomManifest: "api/download"
     }
   }
 };
@@ -64,7 +74,116 @@ function getActionLabel(action) {
 }
 
 function getProvider(providerId) {
-  return PROVIDER_MAP[String(providerId || "steamtools").trim().toLowerCase()] || null;
+  const normalized = String(providerId || "ryuu").trim().toLowerCase();
+  return PROVIDER_MAP[normalized] || null;
+}
+
+function getActionProvider(action, providerId) {
+  if (!isManifestLikeAction(action)) {
+    return PROVIDER_MAP.ryuu;
+  }
+  return getProvider(providerId);
+}
+
+async function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchDepotBoxDownload(provider, apiKey, appid) {
+  const startUrl = new URL(provider.endpoints.downloadManifest, provider.baseUrl).toString();
+  const startResponse = await fetch(startUrl, {
+    method: "POST",
+    cache: "no-store",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": apiKey
+    },
+    body: JSON.stringify({ appid })
+  });
+
+  if (!startResponse.ok) {
+    const failText = await startResponse.text().catch(() => "");
+    return {
+      ok: false,
+      status: startResponse.status,
+      detail: failText
+    };
+  }
+
+  const startPayload = await startResponse.json().catch(() => null);
+  const token = String(startPayload?.token || "").trim();
+  if (!token) {
+    return {
+      ok: false,
+      status: 502,
+      detail: "DepotBox did not return a download token."
+    };
+  }
+
+  const statusUrl = new URL(`api/status/${token}`, provider.baseUrl).toString();
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    if (attempt > 0) {
+      await sleep(1500);
+    }
+
+    const statusResponse = await fetch(statusUrl, {
+      method: "GET",
+      cache: "no-store",
+      headers: {
+        "x-api-key": apiKey
+      }
+    });
+
+    if (!statusResponse.ok) {
+      const failText = await statusResponse.text().catch(() => "");
+      return {
+        ok: false,
+        status: statusResponse.status,
+        detail: failText
+      };
+    }
+
+    const statusPayload = await statusResponse.json().catch(() => null);
+    const status = String(statusPayload?.status || "").toLowerCase();
+
+    if (status === "completed" && statusPayload?.download_link) {
+      const downloadResponse = await fetch(String(statusPayload.download_link), {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          "x-api-key": apiKey
+        }
+      });
+
+      if (!downloadResponse.ok) {
+        const failText = await downloadResponse.text().catch(() => "");
+        return {
+          ok: false,
+          status: downloadResponse.status,
+          detail: failText
+        };
+      }
+
+      return {
+        ok: true,
+        response: downloadResponse
+      };
+    }
+
+    if (status === "failed") {
+      return {
+        ok: false,
+        status: 502,
+        detail: String(statusPayload?.message || "DepotBox download failed.")
+      };
+    }
+  }
+
+  return {
+    ok: false,
+    status: 504,
+    detail: "DepotBox download timed out while processing."
+  };
 }
 
 async function getRandomManifestAppid() {
@@ -250,21 +369,21 @@ export async function POST(request, context) {
     return json({ error: "Invalid JSON body." }, 400);
   }
 
-  const provider = getProvider(payload?.provider);
+  const provider = getActionProvider(action, payload?.provider);
   if (!provider) {
     return json({ error: "Unsupported manifest provider." }, 400);
   }
 
-  const apiKey = process.env.RYUU_API_KEY;
+  const apiKey = process.env[provider.apiKeyEnv || "RYUU_API_KEY"];
   if (!apiKey) {
     await sendDiscordLog({
       title: "Server misconfiguration",
       level: "error",
       description: "Missing required server environment variable.",
       session,
-      fields: [logField("Missing env", "RYUU_API_KEY", false)]
+      fields: [logField("Missing env", provider.apiKeyEnv || "RYUU_API_KEY", false)]
     });
-    return json({ error: "Server misconfiguration: missing API key." }, 500);
+    return json({ error: `Server misconfiguration: missing ${provider.apiKeyEnv || "RYUU_API_KEY"}.` }, 500);
   }
 
   const resolvedAppid = config.randomManifest ? await getRandomManifestAppid() : String(payload?.appid || "").trim();
@@ -283,18 +402,29 @@ export async function POST(request, context) {
   const gameMeta = await getSteamGameMeta(resolvedAppid);
   const gameImage = gameMeta.image || getHeaderImageUrl(resolvedAppid);
 
-  const endpoint = provider.endpoints[config.endpointKey];
-  const url = new URL(`${provider.baseUrl}/${endpoint}`);
-  url.searchParams.set("appid", resolvedAppid);
-  url.searchParams.set("auth_code", apiKey);
-
   let upstream;
   try {
-    upstream = await fetch(url.toString(), {
-      method: "GET",
-      cache: "no-store",
-      redirect: config.isDownload ? "manual" : "follow"
-    });
+    if (provider.label === "DepotBox" && isManifestLikeAction(action)) {
+      const depotBoxResult = await fetchDepotBoxDownload(provider, apiKey, resolvedAppid);
+      if (!depotBoxResult.ok) {
+        upstream = new Response(depotBoxResult.detail || "DepotBox request failed.", {
+          status: depotBoxResult.status || 502
+        });
+      } else {
+        upstream = depotBoxResult.response;
+      }
+    } else {
+      const endpoint = provider.endpoints[config.endpointKey];
+      const url = new URL(`${provider.baseUrl}/${endpoint}`);
+      url.searchParams.set("appid", resolvedAppid);
+      url.searchParams.set("auth_code", apiKey);
+
+      upstream = await fetch(url.toString(), {
+        method: "GET",
+        cache: "no-store",
+        redirect: config.isDownload ? "manual" : "follow"
+      });
+    }
   } catch {
     await sendDiscordLog({
       title: "Action failed: upstream unreachable",
@@ -360,14 +490,20 @@ export async function POST(request, context) {
     }
 
     // If upstream redirect includes auth_code, do not expose it to clients.
-    try {
-      upstream = await fetch(url.toString(), {
-        method: "GET",
-        cache: "no-store",
-        redirect: "follow"
-      });
-    } catch {
-      return json({ error: "Upstream service unreachable." }, 502);
+    if (provider.label !== "DepotBox") {
+      const endpoint = provider.endpoints[config.endpointKey];
+      const url = new URL(`${provider.baseUrl}/${endpoint}`);
+      url.searchParams.set("appid", resolvedAppid);
+      url.searchParams.set("auth_code", apiKey);
+      try {
+        upstream = await fetch(url.toString(), {
+          method: "GET",
+          cache: "no-store",
+          redirect: "follow"
+        });
+      } catch {
+        return json({ error: "Upstream service unreachable." }, 502);
+      }
     }
   }
 

@@ -512,14 +512,15 @@ body {
 
 .st-bulk-simple {
   display: grid;
-  grid-template-columns: minmax(0, 280px) minmax(260px, 1fr);
+  grid-template-columns: minmax(240px, 290px) minmax(0, 1fr);
   gap: 0.85rem;
-  align-items: end;
+  align-items: stretch;
 }
 
 .st-bulk-simple-field {
   display: grid;
   gap: 0.45rem;
+  align-content: start;
 }
 
 .st-bulk-select {
@@ -543,9 +544,16 @@ body {
 }
 
 .st-bulk-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   min-height: 56px;
   align-self: stretch;
+  padding: 0.95rem 1.1rem;
+  text-align: center;
+  line-height: 1.25;
+  white-space: normal;
 }
 
 .st-bulk-panel-locked .st-bulk-btn,

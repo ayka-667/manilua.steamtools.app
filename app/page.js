@@ -11,7 +11,10 @@ const ACTIONS = [
   { id: "updateGame", label: "Update Game", tone: "neutral" }
 ];
 
-const MANIFEST_PROVIDERS = [{ id: "steamtools", label: "SteamTools API" }];
+const MANIFEST_PROVIDERS = [
+  { id: "ryuu", label: "Ryuu" },
+  { id: "depotbox", label: "DepotBox" }
+];
 const BULK_OPTIONS = [3, 5, 10];
 
 const HISTORY_KEY = "steamtools_recent_appids";
@@ -51,7 +54,7 @@ export default function HomePage() {
   const [usage, setUsage] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [resolvedAppid, setResolvedAppid] = useState("");
-  const [manifestProvider, setManifestProvider] = useState("steamtools");
+  const [manifestProvider, setManifestProvider] = useState("ryuu");
   const [bulkCount, setBulkCount] = useState(5);
   const [showPremiumPopup, setShowPremiumPopup] = useState(false);
   const menuRef = useRef(null);
