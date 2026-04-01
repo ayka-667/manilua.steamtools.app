@@ -527,22 +527,6 @@ body {
   min-width: 0;
 }
 
-.st-bulk-badge {
-  border: 1px solid color-mix(in srgb, var(--st-danger) 35%, var(--st-border));
-  background: color-mix(in srgb, var(--st-danger) 10%, var(--st-panel-strong));
-  color: var(--st-text);
-  border-radius: 999px;
-  padding: 0.45rem 0.75rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.st-bulk-badge-active {
-  border-color: color-mix(in srgb, var(--st-ok) 45%, var(--st-border));
-  background: color-mix(in srgb, var(--st-ok) 10%, var(--st-panel-strong));
-}
-
 .st-bulk-btn {
   display: flex;
   align-items: center;

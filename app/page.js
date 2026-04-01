@@ -12,8 +12,8 @@ const ACTIONS = [
 ];
 
 const MANIFEST_PROVIDERS = [
-  { id: "ryuu", label: "Ryuu" },
-  { id: "depotbox", label: "DepotBox" },
+  { id: "ryuu", label: "Ryuu API" },
+  { id: "depotbox", label: "DepotBox (Soon)" },
   { id: "manifesthub", label: "ManifestHub" }
 ];
 const BULK_OPTIONS = [3, 5, 10];
@@ -49,7 +49,7 @@ function getMessage(data) {
 
 function getProviderHelperText(providerId) {
   if (providerId === "manifesthub") {
-    return "Checks GitHub branches and downloads the matching manifest zip. Configure the repo URL in .env.";
+    return "Checks GitHub branches and downloads the matching manifest zip.";
   }
   if (providerId === "depotbox") {
     return "Used for standard manifest downloads and Bulk Manifest.";
@@ -529,9 +529,6 @@ export default function HomePage() {
                 Picks random AppIDs from the shared game list and downloads them through the provider selected in the floating panel.
               </p>
             </div>
-            <span className={`st-bulk-badge ${isPremium ? "st-bulk-badge-active" : ""}`}>
-              {isPremium ? "Premium active" : "Premium only"}
-            </span>
           </div>
           <div className={`st-bulk-card-shell ${!isPremium ? "st-bulk-card-shell-locked" : ""}`}>
             <div className="st-bulk-simple">
