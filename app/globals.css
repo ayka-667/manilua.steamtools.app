@@ -512,9 +512,9 @@ body {
 
 .st-bulk-simple {
   display: grid;
-  grid-template-columns: minmax(240px, 290px) minmax(0, 1fr);
+  grid-template-columns: minmax(220px, 270px) auto;
   gap: 0.85rem;
-  align-items: stretch;
+  align-items: end;
 }
 
 .st-bulk-simple-field {
@@ -531,10 +531,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  min-height: 56px;
-  align-self: stretch;
-  padding: 0.95rem 1.1rem;
+  width: auto;
+  min-width: 250px;
+  max-width: 320px;
+  min-height: 48px;
+  align-self: end;
+  justify-self: start;
+  padding: 0.8rem 1rem;
   text-align: center;
   line-height: 1.25;
   white-space: normal;
@@ -1143,6 +1146,13 @@ body {
 @media (max-width: 980px) {
   .st-bulk-simple {
     grid-template-columns: 1fr;
+  }
+
+  .st-bulk-btn {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    justify-self: stretch;
   }
 
   .st-game-media {

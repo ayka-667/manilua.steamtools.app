@@ -91,6 +91,10 @@ function getActionProvider(action, providerId) {
   return getProvider(providerId);
 }
 
+function providerLogField(provider) {
+  return logField("Provider", provider?.label || "Unknown");
+}
+
 async function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -413,44 +417,6 @@ export async function POST(request, context) {
     );
   }
 
-  if (isManifestLikeAction(action) || action === "downloadLua") {
-    const dailyLimit = isPremiumUser ? 500 : 50;
-    const cooldownMs = isPremiumUser ? 2_000 : 10_000;
-    const tier = isPremiumUser ? "premium" : "standard";
-    const resourceName = action === "downloadLua" ? "Lua" : "manifest";
-    const usage = await getUsageForUser(session.user.id, dailyLimit, cooldownMs);
-
-    if (usage.cooldownSec > 0) {
-      return json(
-        { error: `Cooldown active. Retry in ${usage.cooldownSec}s.` },
-        429,
-        { "retry-after": String(usage.cooldownSec) }
-      );
-    }
-
-    if (usage.downloadsRemaining <= 0) {
-      await sendDiscordLog({
-        title: `${resourceName} daily quota reached`,
-        level: "warning",
-        description: `User reached the daily ${resourceName.toLowerCase()} limit.`,
-        session,
-        mentionUser: true,
-        fields: [
-          logField("Action", actionLabel),
-          logField("Tier", tier),
-          logField("Limit", `${dailyLimit}/day`),
-          logField("Retry", `${Math.max(Math.ceil((usage.dayResetAt - Date.now()) / 1000), 1)}s`)
-        ]
-      });
-      const retryAfterSec = Math.max(Math.ceil((usage.dayResetAt - Date.now()) / 1000), 1);
-      return json(
-        { error: `Daily ${resourceName.toLowerCase()} limit reached (${dailyLimit}/day).` },
-        429,
-        { "retry-after": String(retryAfterSec) }
-      );
-    }
-  }
-
   let payload;
   try {
     payload = await request.json();
@@ -471,6 +437,58 @@ export async function POST(request, context) {
     return json({ error: "Unsupported manifest provider." }, 400);
   }
 
+  if (isManifestLikeAction(action) || action === "downloadLua") {
+    const dailyLimit = isPremiumUser ? 500 : 50;
+    const cooldownMs = isPremiumUser ? 2_000 : 10_000;
+    const tier = isPremiumUser ? "premium" : "standard";
+    const resourceName = action === "downloadLua" ? "Lua" : "manifest";
+    const usage = await getUsageForUser(session.user.id, dailyLimit, cooldownMs);
+
+    if (usage.cooldownSec > 0) {
+      await sendDiscordLog({
+        title: `${resourceName} cooldown active`,
+        level: "warning",
+        description: `User hit the ${resourceName.toLowerCase()} cooldown.`,
+        session,
+        mentionUser: true,
+        fields: [
+          logField("Action", actionLabel),
+          providerLogField(provider),
+          logField("Tier", tier),
+          logField("Retry", `${usage.cooldownSec}s`)
+        ]
+      });
+      return json(
+        { error: `Cooldown active. Retry in ${usage.cooldownSec}s.` },
+        429,
+        { "retry-after": String(usage.cooldownSec) }
+      );
+    }
+
+    if (usage.downloadsRemaining <= 0) {
+      const retryAfterSec = Math.max(Math.ceil((usage.dayResetAt - Date.now()) / 1000), 1);
+      await sendDiscordLog({
+        title: `${resourceName} daily quota reached`,
+        level: "warning",
+        description: `User reached the daily ${resourceName.toLowerCase()} limit.`,
+        session,
+        mentionUser: true,
+        fields: [
+          logField("Action", actionLabel),
+          providerLogField(provider),
+          logField("Tier", tier),
+          logField("Limit", `${dailyLimit}/day`),
+          logField("Retry", `${retryAfterSec}s`)
+        ]
+      });
+      return json(
+        { error: `Daily ${resourceName.toLowerCase()} limit reached (${dailyLimit}/day).` },
+        429,
+        { "retry-after": String(retryAfterSec) }
+      );
+    }
+  }
+
   const apiKey = provider.apiKeyEnv ? process.env[provider.apiKeyEnv] : "";
   if (provider.apiKeyEnv && !apiKey) {
     await sendDiscordLog({
@@ -478,7 +496,7 @@ export async function POST(request, context) {
       level: "error",
       description: "Missing required server environment variable.",
       session,
-      fields: [logField("Missing env", provider.apiKeyEnv || "RYUU_API_KEY", false)]
+      fields: [providerLogField(provider), logField("Missing env", provider.apiKeyEnv || "RYUU_API_KEY", false)]
     });
     return json({ error: `Server misconfiguration: missing ${provider.apiKeyEnv || "RYUU_API_KEY"}.` }, 500);
   }
@@ -491,7 +509,7 @@ export async function POST(request, context) {
       description: "Received malformed or empty AppID.",
       session,
       mentionUser: true,
-      fields: [logField("Action", actionLabel), logField("AppID", resolvedAppid || "empty")]
+      fields: [logField("Action", actionLabel), providerLogField(provider), logField("AppID", resolvedAppid || "empty")]
     });
     return json({ error: "appid must be numeric (1-10 digits)." }, 400);
   }
