@@ -409,7 +409,7 @@ export default function HomePage() {
           </label>
           <select
             id="manifest-provider"
-            className="st-appid-input"
+            className="st-appid-input st-select-input"
             value={manifestProvider}
             onChange={(event) => setManifestProvider(event.target.value)}
           >
@@ -538,7 +538,7 @@ export default function HomePage() {
                 </label>
                 <select
                   id="bulk-count"
-                  className="st-appid-input st-bulk-select"
+                  className="st-appid-input st-select-input st-bulk-select"
                   value={bulkCount}
                   onChange={(event) => setBulkCount(Number(event.target.value))}
                   disabled={!isPremium}

@@ -252,6 +252,40 @@ body {
   outline: none;
 }
 
+.st-select-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+  padding-right: 3.2rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, color-mix(in srgb, var(--st-brand) 72%, white) 50%),
+    linear-gradient(135deg, color-mix(in srgb, var(--st-brand) 72%, white) 50%, transparent 50%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--st-brand) 12%, rgba(255, 255, 255, 0.03)),
+      color-mix(in srgb, var(--st-brand) 4%, rgba(255, 255, 255, 0.01))
+    );
+  background-position:
+    calc(100% - 1.25rem) calc(50% + 0.05rem),
+    calc(100% - 0.8rem) calc(50% + 0.05rem),
+    0 0;
+  background-size:
+    0.5rem 0.5rem,
+    0.5rem 0.5rem,
+    100% 100%;
+  background-repeat: no-repeat;
+}
+
+.st-select-input:hover {
+  border-color: color-mix(in srgb, var(--st-brand) 42%, var(--st-border));
+}
+
+.st-select-input option {
+  color: var(--st-text);
+  background: #121826;
+}
+
 .st-appid-input:focus {
   border-color: var(--st-brand);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--st-brand) 20%, transparent);
@@ -290,6 +324,13 @@ body {
 .st-provider-card .st-appid-input {
   border-color: color-mix(in srgb, var(--st-brand) 24%, var(--st-border));
   background: rgba(7, 9, 17, 0.18);
+}
+
+.st-provider-card .st-select-input {
+  background-image:
+    linear-gradient(45deg, transparent 50%, color-mix(in srgb, white 86%, var(--st-brand)) 50%),
+    linear-gradient(135deg, color-mix(in srgb, white 86%, var(--st-brand)) 50%, transparent 50%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
 }
 
 .st-provider-card .st-helper {

@@ -29,6 +29,8 @@ async function tryAutoJoinGuild(discordUserId, userAccessToken) {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   providers: [
     Discord({
       clientId: process.env.DISCORD_CLIENT_ID || process.env.AUTH_DISCORD_ID,
