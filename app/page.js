@@ -13,13 +13,11 @@ const ACTIONS = [
 
 const MANIFEST_PROVIDERS = [
   { id: "ryuu", label: "Ryuu API" },
-  { id: "depotbox", label: "DepotBox (Soon)" },
   { id: "manifesthub", label: "ManifestHub" }
 ];
 const BULK_OPTIONS = [3, 5, 10];
 const PROVIDER_ACTION_SUPPORT = {
   ryuu: new Set([...ACTIONS.map((action) => action.id), "downloadRandomManifest"]),
-  depotbox: new Set(["downloadManifest", "downloadRandomManifest"]),
   manifesthub: new Set(["downloadManifest"])
 };
 
@@ -50,9 +48,6 @@ function getMessage(data) {
 function getProviderHelperText(providerId) {
   if (providerId === "manifesthub") {
     return "Checks GitHub branches and downloads the matching manifest zip.";
-  }
-  if (providerId === "depotbox") {
-    return "Used for standard manifest downloads and Bulk Manifest.";
   }
   return "Used for manifests, Lua generation, requests, and Bulk Manifest.";
 }
