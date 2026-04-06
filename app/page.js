@@ -372,6 +372,14 @@ export default function HomePage() {
 
   return (
     <main className="st-page">
+      {!viewerLoaded ? (
+        <div className="st-loading-overlay" aria-live="polite">
+          <div className="st-loading-card">
+            <div className="st-loading-spinner" aria-hidden="true" />
+            <p>Loading your account...</p>
+          </div>
+        </div>
+      ) : null}
       <div className="st-profile st-profile-global" ref={menuRef}>
         <button className="st-profile-btn" type="button" onClick={() => setMenuOpen((prev) => !prev)}>
           {viewer?.image ? (

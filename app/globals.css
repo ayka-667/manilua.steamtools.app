@@ -813,6 +813,47 @@ body {
   position: relative;
 }
 
+.st-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(900px 500px at 12% -5%, color-mix(in srgb, var(--st-brand) 18%, transparent), transparent),
+    rgba(4, 6, 16, 0.78);
+  backdrop-filter: blur(10px);
+}
+
+.st-loading-card {
+  display: grid;
+  gap: 0.75rem;
+  place-items: center;
+  padding: 1.2rem 1.5rem;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--st-brand) 30%, var(--st-border));
+  background: color-mix(in srgb, var(--st-panel) 70%, #0b0f1c);
+  box-shadow: var(--st-shadow);
+  text-align: center;
+}
+
+.st-loading-card p {
+  margin: 0;
+  color: var(--st-muted);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.st-loading-spinner {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 5px solid color-mix(in srgb, var(--st-brand) 24%, transparent);
+  border-top-color: var(--st-brand);
+  border-right-color: color-mix(in srgb, var(--st-brand-2) 80%, var(--st-brand));
+  animation: st-spin 0.9s linear infinite;
+}
+
 .st-modal-top {
   display: flex;
   align-items: center;
@@ -1262,6 +1303,12 @@ body {
 @keyframes st-shimmer {
   to {
     background-position-x: -200%;
+  }
+}
+
+@keyframes st-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
