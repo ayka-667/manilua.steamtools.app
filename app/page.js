@@ -374,9 +374,9 @@ export default function HomePage() {
     <main className="st-page">
       {!viewerLoaded ? (
         <div className="st-loading-overlay" aria-live="polite">
-          <div className="st-loading-card">
-            <div className="st-loading-spinner" aria-hidden="true" />
-            <p>Loading your account...</p>
+          <div className="st-loading-badge" aria-hidden="true">
+            <span className="st-loading-orb" />
+            <span className="st-loading-text">SteamTools</span>
           </div>
         </div>
       ) : null}

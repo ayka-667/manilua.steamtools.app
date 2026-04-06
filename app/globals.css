@@ -819,39 +819,39 @@ body {
   z-index: 220;
   display: grid;
   place-items: center;
-  background:
-    radial-gradient(900px 500px at 12% -5%, color-mix(in srgb, var(--st-brand) 18%, transparent), transparent),
-    rgba(4, 6, 16, 0.78);
-  backdrop-filter: blur(10px);
+  background: rgba(3, 5, 12, 0.38);
+  backdrop-filter: blur(4px);
 }
 
-.st-loading-card {
-  display: grid;
-  gap: 0.75rem;
-  place-items: center;
-  padding: 1.2rem 1.5rem;
-  border-radius: 18px;
-  border: 1px solid color-mix(in srgb, var(--st-brand) 30%, var(--st-border));
-  background: color-mix(in srgb, var(--st-panel) 70%, #0b0f1c);
-  box-shadow: var(--st-shadow);
-  text-align: center;
-}
-
-.st-loading-card p {
-  margin: 0;
+.st-loading-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--st-brand) 18%, var(--st-border));
+  background: color-mix(in srgb, var(--st-panel-strong) 80%, transparent);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
   color: var(--st-muted);
+  font-size: 0.82rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.st-loading-spinner {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 5px solid color-mix(in srgb, var(--st-brand) 24%, transparent);
-  border-top-color: var(--st-brand);
-  border-right-color: color-mix(in srgb, var(--st-brand-2) 80%, var(--st-brand));
-  animation: st-spin 0.9s linear infinite;
+.st-loading-orb {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--st-brand);
+  box-shadow:
+    0 0 10px color-mix(in srgb, var(--st-brand) 70%, transparent),
+    0 0 18px color-mix(in srgb, var(--st-brand-2) 55%, transparent);
+  animation: st-pulse 1.1s ease-in-out infinite;
+}
+
+.st-loading-text {
+  color: var(--st-muted);
 }
 
 .st-modal-top {
@@ -1309,6 +1309,18 @@ body {
 @keyframes st-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes st-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
   }
 }
 
