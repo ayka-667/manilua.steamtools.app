@@ -60,6 +60,7 @@ export default function HomePage() {
   const [game, setGame] = useState(null);
   const [gameLoading, setGameLoading] = useState(false);
   const [viewer, setViewer] = useState(null);
+  const [viewerLoaded, setViewerLoaded] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [usage, setUsage] = useState(null);
@@ -83,9 +84,13 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    if (!viewerLoaded || isPremium) {
+      setShowPremiumPopup(false);
+      return;
+    }
     const timeout = window.setTimeout(() => setShowPremiumPopup(true), 450);
     return () => window.clearTimeout(timeout);
-  }, []);
+  }, [viewerLoaded, isPremium]);
 
   useEffect(() => {
     if (!showPremiumPopup) {
@@ -119,6 +124,7 @@ export default function HomePage() {
       setIsPremium(Boolean(data.premium));
       setIsAdmin((prev) => prev || Boolean(data.isAdmin));
       setUsage(data.usage || null);
+      setViewerLoaded(true);
     } catch {
       if (redirectOnFail) window.location.href = "/login";
     }
