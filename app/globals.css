@@ -1010,8 +1010,7 @@ body {
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(3, 5, 14, 0.72);
-  backdrop-filter: blur(8px);
+  background: rgba(3, 5, 14, 0.62);
 }
 
 .st-modal-card {
