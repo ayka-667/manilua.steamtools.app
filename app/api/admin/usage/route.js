@@ -3,7 +3,7 @@ import { checkGuildRole } from "../../../../lib/discord-role";
 import { getAdminUsageRows } from "../../../../lib/usage-store";
 import { getAdminStats } from "../../../../lib/stats-store";
 
-const ADMIN_ROLE_ID = "1363231330732867665";
+const ADMIN_ROLE_ID = process.env.DISCORD_ADMIN_ROLE_ID || "";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {

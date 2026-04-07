@@ -241,7 +241,7 @@ export default function HomePage() {
       return;
     }
     if (PREMIUM_ACTIONS.has(actionId) && !isPremium) {
-      pushToast("error", "Buy the premium Discord role to use this action.");
+      pushToast("error", "Premium required. Visit /premium to upgrade.");
       return;
     }
 
@@ -292,7 +292,7 @@ export default function HomePage() {
 
   async function runBulkManifest() {
     if (!isPremium) {
-      pushToast("error", "Buy the premium Discord role to use Bulk Manifest.");
+      pushToast("error", "Premium required. Visit /premium to upgrade.");
       return;
     }
     if (!canRunBulkManifest) {

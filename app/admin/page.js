@@ -274,9 +274,15 @@ export default function AdminPage() {
               Lifetime stats stay visible, with daily highlights and image-ready Discord cards.
             </p>
           </div>
-          <button type="button" className="st-login-btn st-admin-refresh" onClick={loadData} disabled={loading}>
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
+          <div className="st-admin-head-actions">
+            <nav className="st-admin-nav">
+              <a href="/admin" className="st-admin-nav-link is-active">Usage</a>
+              <a href="/admin/premium" className="st-admin-nav-link">Premium</a>
+            </nav>
+            <button type="button" className="st-login-btn st-admin-refresh" onClick={loadData} disabled={loading}>
+              {loading ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
         </header>
 
         {copyFeedback ? <div className="st-admin-copy-feedback">{copyFeedback}</div> : null}

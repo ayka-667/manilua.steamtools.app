@@ -1,7 +1,7 @@
 import { auth } from "../../../auth";
 import { checkGuildMembership, checkGuildRole, checkPremiumRole } from "../../../lib/discord-role";
 import { getUsageForUser } from "../../../lib/usage-store";
-const ADMIN_ROLE_ID = "1363231330732867665";
+const ADMIN_ROLE_ID = process.env.DISCORD_ADMIN_ROLE_ID || "";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -44,7 +44,7 @@ export async function GET() {
       name: session.user.name || "Discord User",
       image: session.user.image || "",
       tag: session.user.tag || "",
-      premiumUrl: process.env.DISCORD_PREMIUM_URL || ""
+      premiumUrl: "/premium"
     },
     inGuild: membership.allowed,
     guildReason: membership.reason,
