@@ -1,7 +1,12 @@
 import { auth } from "../../../../../auth";
 import { checkGuildRole } from "../../../../../lib/discord-role";
 import { logField, sendDiscordLog } from "../../../../../lib/discord-logs";
-import { getPremiumOrderById, getPremiumOrders, updatePremiumOrderStatus } from "../../../../../lib/premium-store";
+import {
+  getPremiumOrderById,
+  getPremiumOrders,
+  setCooldownResetAt,
+  updatePremiumOrderStatus
+} from "../../../../../lib/premium-store";
 
 const ADMIN_ROLE_ID = process.env.DISCORD_ADMIN_ROLE_ID || "";
 
@@ -86,12 +91,7 @@ export async function POST(request) {
   }
 
   if (action === "reset_cooldown") {
-    await updatePremiumOrderStatus({
-      id: orderId,
-      status: "reset_cooldown",
-      adminId: admin.userId,
-      note
-    });
+    await setCooldownResetAt(order.user_id);
     return json({ ok: true });
   }
 

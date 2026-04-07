@@ -1,6 +1,11 @@
 import { auth } from "../../../../auth";
 import { logField, sendDiscordLog } from "../../../../lib/discord-logs";
-import { createPremiumOrder, getLatestOrderForUser, getPendingOrderForUser } from "../../../../lib/premium-store";
+import {
+  createPremiumOrder,
+  getCooldownResetAt,
+  getLatestOrderForUser,
+  getPendingOrderForUser
+} from "../../../../lib/premium-store";
 
 const ADMIN_ROLE_ID = process.env.DISCORD_ADMIN_ROLE_ID || "";
 const ALLOWED_METHODS = new Set(["paypal", "card", "steam"]);
@@ -48,8 +53,10 @@ export async function POST(request) {
   }
 
   const latest = await getLatestOrderForUser(session.user.id);
+  const resetAt = await getCooldownResetAt(session.user.id);
+  const cooldownBase = resetAt && latest && resetAt >= Number(latest.created_at_ms || 0) ? 0 : Number(latest?.created_at_ms || 0);
   const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
-  if (latest && Date.now() - Number(latest.created_at_ms || 0) < TWO_HOURS_MS) {
+  if (cooldownBase && Date.now() - cooldownBase < TWO_HOURS_MS) {
     return json({ error: "Please wait 2 hours before creating another order." }, 429);
   }
 
