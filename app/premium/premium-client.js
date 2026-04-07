@@ -31,7 +31,7 @@ const INSTRUCTIONS = {
 };
 
 export default function PremiumClient() {
-  const [price, setPrice] = useState({ amount: 4.99, currency: "EUR", formatted: "4.99€" });
+  const [price, setPrice] = useState({ amount: 4.99, currency: "EUR", formatted: "4.99 EUR" });
   const [viewer, setViewer] = useState(null);
   const [isPremium, setIsPremium] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -71,7 +71,7 @@ export default function PremiumClient() {
     };
   }, []);
 
-  const priceLabel = price?.formatted || "4.99€";
+  const priceLabel = price?.formatted || "4.99 EUR";
   const methodInfo = useMemo(() => PAYMENT_METHODS.find((item) => item.id === method), [method]);
 
   async function submitOrder(nextMethod) {

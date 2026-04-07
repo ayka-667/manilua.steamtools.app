@@ -893,6 +893,22 @@ body {
 .st-premium-instructions p {
   margin: 0;
   color: var(--st-muted);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.st-admin-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--st-muted);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.st-admin-toggle input {
+  width: 16px;
+  height: 16px;
 }
 
 .st-premium-code {

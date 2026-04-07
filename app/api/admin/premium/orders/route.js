@@ -27,12 +27,14 @@ async function requireAdmin(session) {
   return { ok: true, userId };
 }
 
-export async function GET() {
+export async function GET(request) {
   const session = await auth();
   const admin = await requireAdmin(session);
   if (!admin.ok) return admin.response;
 
-  const orders = await getPremiumOrders();
+  const url = new URL(request.url);
+  const status = url.searchParams.get("status") || "pending";
+  const orders = await getPremiumOrders(status);
   return json({ ok: true, orders });
 }
 

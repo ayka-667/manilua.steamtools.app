@@ -20,13 +20,14 @@ export default function AdminPremiumPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
+  const [showAll, setShowAll] = useState(false);
 
-  async function loadAll() {
+  async function loadAll(nextShowAll = showAll) {
     setLoading(true);
     setError("");
     try {
       const [ordersRes, priceRes] = await Promise.all([
-        fetch("/api/admin/premium/orders", { cache: "no-store" }),
+        fetch(`/api/admin/premium/orders?status=${nextShowAll ? "all" : "pending"}`, { cache: "no-store" }),
         fetch("/api/admin/premium/price", { cache: "no-store" })
       ]);
       const ordersData = await ordersRes.json().catch(() => ({}));
@@ -46,6 +47,10 @@ export default function AdminPremiumPage() {
   useEffect(() => {
     loadAll();
   }, []);
+
+  useEffect(() => {
+    loadAll(showAll);
+  }, [showAll]);
 
   async function savePrice() {
     setSaving(true);
@@ -123,7 +128,17 @@ export default function AdminPremiumPage() {
         <section className="st-panel st-admin-table-wrap">
           <div className="st-admin-section-head">
             <h2 className="st-admin-section-title">Orders</h2>
-            {loading ? <p className="st-admin-section-note">Loading…</p> : null}
+            <div className="st-admin-inline-actions">
+              <label className="st-admin-toggle">
+                <input
+                  type="checkbox"
+                  checked={showAll}
+                  onChange={(event) => setShowAll(event.target.checked)}
+                />
+                <span>Show processed orders</span>
+              </label>
+              {loading ? <p className="st-admin-section-note">Loading…</p> : null}
+            </div>
           </div>
           <table className="st-admin-table">
             <thead>

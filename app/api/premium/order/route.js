@@ -1,6 +1,6 @@
 import { auth } from "../../../../auth";
 import { logField, sendDiscordLog } from "../../../../lib/discord-logs";
-import { createPremiumOrder } from "../../../../lib/premium-store";
+import { createPremiumOrder, getLatestOrderForUser, getPendingOrderForUser } from "../../../../lib/premium-store";
 
 const ADMIN_ROLE_ID = process.env.DISCORD_ADMIN_ROLE_ID || "";
 const ALLOWED_METHODS = new Set(["paypal", "card", "steam"]);
@@ -40,6 +40,16 @@ export async function POST(request) {
   const steamCode = method === "steam" ? cleanCode(payload?.steamCode) : "";
   if (method === "steam" && steamCode.length < 5) {
     return json({ error: "Steam Wallet code required." }, 400);
+  }
+
+  const pending = await getPendingOrderForUser(session.user.id);
+  if (pending) {
+    return json({ error: "You already have a pending order. Please wait for admin approval." }, 409);
+  }
+
+  const latest = await getLatestOrderForUser(session.user.id);
+  if (latest && Date.now() - Number(latest.created_at_ms || 0) < 60_000) {
+    return json({ error: "Please wait a minute before creating another order." }, 429);
   }
 
   const order = await createPremiumOrder({
