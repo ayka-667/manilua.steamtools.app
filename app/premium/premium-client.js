@@ -39,6 +39,7 @@ export default function PremiumClient() {
   const [steamCode, setSteamCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [orderId, setOrderId] = useState("");
+  const [showOrderModal, setShowOrderModal] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -95,6 +96,7 @@ export default function PremiumClient() {
       }
       setOrderId(String(payload.orderId || ""));
       setSuccess("Order created. Please follow the instructions below.");
+      setShowOrderModal(true);
     } catch (err) {
       setError(err?.message || "Unable to create order.");
     } finally {
@@ -110,11 +112,6 @@ export default function PremiumClient() {
         <p className="st-subtitle">
           Unlock faster cooldowns, higher daily limits, and premium update tools. Pay once, keep it forever.
         </p>
-        <div className="st-premium-price">
-          <span className="st-price-label">Price</span>
-          <span className="st-price-value">{priceLabel}</span>
-          <span className="st-price-note">One-time payment</span>
-        </div>
       </header>
 
       <section className="st-panel st-premium-features">
@@ -200,15 +197,28 @@ export default function PremiumClient() {
                 {submitting ? "Creating order..." : "Create order"}
               </button>
 
-              {orderId ? (
-                <p className="st-premium-wait">Order #{orderId} created. Please wait for admin approval.</p>
-              ) : null}
-              {success ? <p className="st-premium-success">{success}</p> : null}
               {error ? <p className="st-premium-error">{error}</p> : null}
             </div>
           </>
         )}
       </section>
+
+      {showOrderModal ? (
+        <div className="st-modal-backdrop" onClick={() => setShowOrderModal(false)}>
+          <div className="st-modal-card" onClick={(event) => event.stopPropagation()}>
+            <div className="st-modal-top">
+              <span className="st-kicker">Order created</span>
+              <button type="button" className="st-modal-close" onClick={() => setShowOrderModal(false)}>
+                Close
+              </button>
+            </div>
+            <h2>Thank you for your order</h2>
+            <p className="st-helper">
+              Order #{orderId || "-"} is pending. Please complete the payment instructions and wait for admin approval.
+            </p>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

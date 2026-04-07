@@ -48,8 +48,9 @@ export async function POST(request) {
   }
 
   const latest = await getLatestOrderForUser(session.user.id);
-  if (latest && Date.now() - Number(latest.created_at_ms || 0) < 60_000) {
-    return json({ error: "Please wait a minute before creating another order." }, 429);
+  const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+  if (latest && Date.now() - Number(latest.created_at_ms || 0) < TWO_HOURS_MS) {
+    return json({ error: "Please wait 2 hours before creating another order." }, 429);
   }
 
   const order = await createPremiumOrder({
