@@ -186,6 +186,13 @@ export default function AdminPremiumPage() {
                         >
                           Reject
                         </button>
+                        <button
+                          type="button"
+                          className="st-admin-copy-btn"
+                          onClick={() => handleAction(order.id, "reset_cooldown")}
+                        >
+                          Reset timer
+                        </button>
                       </div>
                     </td>
                   </tr>

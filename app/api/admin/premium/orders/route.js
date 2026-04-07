@@ -54,7 +54,7 @@ export async function POST(request) {
   const action = String(payload?.action || "").toLowerCase();
   const note = String(payload?.note || "").trim().slice(0, 255);
 
-  if (!orderId || !["approve", "reject"].includes(action)) {
+  if (!orderId || !["approve", "reject", "reset_cooldown"].includes(action)) {
     return json({ error: "Invalid request." }, 400);
   }
 
@@ -82,6 +82,16 @@ export async function POST(request) {
       ]
     });
 
+    return json({ ok: true });
+  }
+
+  if (action === "reset_cooldown") {
+    await updatePremiumOrderStatus({
+      id: orderId,
+      status: "reset_cooldown",
+      adminId: admin.userId,
+      note
+    });
     return json({ ok: true });
   }
 

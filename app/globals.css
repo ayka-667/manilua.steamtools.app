@@ -916,6 +916,27 @@ body {
   box-shadow: none;
 }
 
+.st-premium-modal-instructions {
+  border: 1px solid var(--st-border);
+  border-radius: 14px;
+  padding: 0.8rem;
+  background: color-mix(in srgb, var(--st-brand) 8%, var(--st-panel-strong));
+  display: grid;
+  gap: 0.5rem;
+}
+
+.st-premium-modal-instructions p {
+  margin: 0;
+  color: var(--st-muted);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.st-premium-helper {
+  font-size: 0.85rem;
+  color: var(--st-muted);
+}
+
 .st-admin-toggle {
   display: inline-flex;
   align-items: center;

@@ -40,6 +40,7 @@ export default function PremiumClient() {
   const [submitting, setSubmitting] = useState(false);
   const [orderId, setOrderId] = useState("");
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [orderCountdown, setOrderCountdown] = useState(0);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -97,12 +98,28 @@ export default function PremiumClient() {
       setOrderId(String(payload.orderId || ""));
       setSuccess("Order created. Please follow the instructions below.");
       setShowOrderModal(true);
+      setOrderCountdown(10);
     } catch (err) {
       setError(err?.message || "Unable to create order.");
     } finally {
       setSubmitting(false);
     }
   }
+
+  useEffect(() => {
+    if (!showOrderModal) return;
+    if (orderCountdown <= 0) return;
+    const intervalId = window.setInterval(() => {
+      setOrderCountdown((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(intervalId);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [showOrderModal, orderCountdown]);
 
   return (
     <section className="st-shell st-premium-shell">
@@ -170,8 +187,6 @@ export default function PremiumClient() {
                 <h3>{methodInfo?.title}</h3>
                 <span>{priceLabel}</span>
               </div>
-              <p>{INSTRUCTIONS[method]?.(priceLabel)}</p>
-
               {method === "steam" ? (
                 <div className="st-premium-code">
                   <label htmlFor="steam-code" className="st-field-label">
@@ -204,18 +219,33 @@ export default function PremiumClient() {
       </section>
 
       {showOrderModal ? (
-        <div className="st-modal-backdrop" onClick={() => setShowOrderModal(false)}>
+        <div className="st-modal-backdrop" onClick={() => orderCountdown === 0 && setShowOrderModal(false)}>
           <div className="st-modal-card" onClick={(event) => event.stopPropagation()}>
             <div className="st-modal-top">
               <span className="st-kicker">Order created</span>
-              <button type="button" className="st-modal-close" onClick={() => setShowOrderModal(false)}>
-                Close
+              <button
+                type="button"
+                className="st-modal-close"
+                onClick={() => setShowOrderModal(false)}
+                disabled={orderCountdown > 0}
+              >
+                {orderCountdown > 0 ? `Close (${orderCountdown}s)` : "Close"}
               </button>
             </div>
             <h2>Thank you for your order</h2>
             <p className="st-helper">
               Order #{orderId || "-"} is pending. Please complete the payment instructions and wait for admin approval.
             </p>
+            <div className="st-premium-modal-instructions">
+              <div className="st-premium-instructions-head">
+                <h3>{methodInfo?.title}</h3>
+                <span>{priceLabel}</span>
+              </div>
+              <p>{INSTRUCTIONS[method]?.(priceLabel)}</p>
+              {method === "steam" ? (
+                <p className="st-premium-helper">Your Steam Wallet code was saved with the order.</p>
+              ) : null}
+            </div>
           </div>
         </div>
       ) : null}
